@@ -1016,3 +1016,81 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
         }
     }
 }
+
+#' A sparse vector representation of \code{rawRspectrum}
+#'
+#' @param x A /code{rawSpectrum} object
+#' @param binSize Bin size along m/z dimension used to aggregate centroided intensity values.
+#' @param fun Function used for aggregation of signals within bins.
+#'
+#' @description Function converts the centroided peak information stored in a
+#' \code{rawRspectrum} object into a sparse vector representation. This is
+#' primarily useful for spectrum vs. spectrum comparisons that rely on vector
+#' arithmetics like dot product. Since centroided data can be very sparse, we
+#' chose to use sparse instead of dense vectors.
+#' 
+#' @details The input spectrum is divided into bins of equal size (see binSize parameter)
+#' and each bin is assigned a certain weight, calculated by using an aggregation function
+#' (see fun parameter). Typically sum or max are used. The binned spectrum is
+#' than converted into a sparse vector. The i index of none zero values goes
+#' along the m/z (position).
+#'
+#' @return A sparse vector
+#' @export as_sparseVector
+#'
+#' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
+#' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]])
+#' plot(sS, type = "h")
+as_sparseVector <- function(x, binSize = 1, fun = "sum"){
+    
+    stopifnot(is.rawRspectrum(x), is.numeric(binSize))
+    
+    if (x$centroidStream) {
+      
+        S <- data.frame(pos = x$centroid.mZ %/% binSize, int = x$centroid.intensity)
+        S <- aggregate(int ~ pos, data = S, FUN = fun)
+        
+        message(paste("Aggregating peaks in", binSize, "m/z bins by", fun, sep = " "))
+        sV <- Matrix::sparseVector(x = S$int, i = S$pos, length = x$massRange[2]/binSize)
+        message(paste("Returned sparse vector represents the m/z interval from [", 0, "to", x$massRange[2], "]"))
+        
+        
+    } else {
+        
+        stop("The rawRspectrum instance does not contain a centroided stream!")
+    
+      }
+    
+    return(sV)
+}
+
+
+#' The normalized dot product of two sparse vectors
+#'
+#' @author Tobias Kockmann
+#' @description The function calculates the normalized dot product of two sparse
+#' vectors given they are of equal dimentionality (length). The normalized dot
+#' product is also called the cosine distance between two vectors.
+#' 
+#' @details See Eq. 6 of Yilmaz Ş, Vandermarliere E, Martens L.
+#' Methods to Calculate Spectrum Similarity. Methods Mol Biol. 2017;1549:75-100.
+#' doi: 10.1007/978-1-4939-6740-7_7. PMID: 27975285.
+#' 
+#' \deqn{ \cos\theta = \frac{\sum(x \times y)}{sqrt(\sum(x^2))sqrt(\sum(y^2))}}
+#'  
+#'
+#' @param x A sparse vector
+#' @param y A sparse vector
+#'
+#' @return A numeric value between 0 and 1 equal to the normalized dot product.
+#' @export normDotProt
+#'
+#' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
+#' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]])
+#' normDotProt(sS, sS)
+normDotProt <- function(x, y){
+    
+    stopifnot(is(x, "sparseVector"), is(y, "sparseVector"), length(x) == length(y))
+    
+    sum(x*y)/(sqrt(sum(x^2))*sqrt(sum(y^2)))
+}
