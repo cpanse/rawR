@@ -17,7 +17,8 @@ Suggests:
 	knitr,
 	lattice,
 	parallel,
-	testthat
+	testthat,
+	Matrix
 Description: provides interface for Thermo Fisher Scientifc raw files
         branched from rawDiag. This package wraps the functionality
 	of the RawFileReader .NET assembly. Within the R environment
