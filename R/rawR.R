@@ -1019,49 +1019,139 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 
 #' A sparse vector representation of \code{rawRspectrum}
 #'
-#' @param x A /code{rawSpectrum} object
+#' @param x A \code{rawSpectrum} object
 #' @param binSize Bin size along m/z dimension used to aggregate centroided intensity values.
 #' @param fun Function used for aggregation of signals within bins.
+#' @param StoNcutoff A S/N cutoff applied for peak filtering 
+#' @param vType Either \code{sV} for a sparse vector,
+#' \code{scV} for a sparse column vector (matrix type),
+#' or \code{srV} for a sparse row vector (matrix type).
+#' 
+#' @author Tobias Kockmann
 #'
 #' @description Function converts the centroided peak information stored in a
-#' \code{rawRspectrum} object into a sparse vector representation. This is
+#' \code{rawRspectrum} object into a sparse vector/matrix representation. This is
 #' primarily useful for spectrum vs. spectrum comparisons that rely on vector
 #' arithmetics like dot product. Since centroided data can be very sparse, we
-#' chose to use sparse instead of dense vectors.
+#' chose to use sparse instead of dense vectors/matrises.
 #' 
-#' @details The input spectrum is divided into bins of equal size (see binSize parameter)
+#' @details The input spectrum is divided into m/z bins of equal size (see binSize parameter)
 #' and each bin is assigned a certain weight, calculated by using an aggregation function
-#' (see fun parameter). Typically sum or max are used. The binned spectrum is
+#' (see fun parameter). Typically \code{sum} or \code{max} are used. The binned spectrum is
 #' than converted into a sparse vector. The i index of none zero values goes
-#' along the m/z (position).
+#' along the m/z bins.
 #'
-#' @return A sparse vector
+#' @return A sparse object depending on \code{vType}
 #' @export as_sparseVector
 #'
 #' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
-#' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]])
-#' plot(sS, type = "h")
-as_sparseVector <- function(x, binSize = 1, fun = "sum"){
-    
-    stopifnot(is.rawRspectrum(x), is.numeric(binSize))
+#' I <- readIndex(pathToRawFile)
+#' S <- readSpectrum(pathToRawFile, 1:dim(I)[1])
+#' sV <- lapply(S[I[I$MSOrder == "Ms", "scan"]], as_sparseVector)
+#' plot(sV[[1]], type = "h")
+#' 
+#' ## Generate sparse row vector
+#' as_sparseVector(S[[1]], vType = "srV")
+#' 
+#' ## Generate sparse column vector
+#' as_sparseVector(S[[1]], vType = "scV")
+#'
+#' ## Generate sparse vector
+#' as_sparseVector(S[[1]], vType = "sV")
+as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
+                            topN = 100, vType = "srV", peakFilter = "StoN"){
+
+ ## TODO : add option to subset on S/N [x]
+ ## TODO : add possibility to subset on order/rank, topN []
+     
+    stopifnot(is.rawRspectrum(x), is.numeric(binSize), is.numeric(StoNcutoff),
+              is.numeric(topN), is.character(vType), is.character(peakFilter))
     
     if (x$centroidStream) {
-      
-        S <- data.frame(pos = x$centroid.mZ %/% binSize, int = x$centroid.intensity)
-        S <- aggregate(int ~ pos, data = S, FUN = fun)
         
+        ## 1. org. centroided data
+        df <- data.frame(pos = x$centroid.mZ,
+                        int = x$centroid.intensity,
+                        z = x$charges,
+                        n = x$noises,
+                        r = x$resolutions,
+                        b = x$baselines,
+                        bin = x$centroid.mZ %/% binSize,
+                        sn = x$centroid.intensity/x$noises,
+                        rint = x$centroid.intensity/max(x$centroid.intensity),
+                        order = order(x$centroid.intensity/x$noises, decreasing = FALSE))
+        
+        message("The original centroided data:")
+        print(head(df))
+        
+        ## 2. filtering
+        if (peakFilter == "StoN") {
+            
+            ## subsetting on S/N
+            message(paste("Subsetting with S/N cutoff:", StoNcutoff, sep = " "))
+            df <- df[df$sn > StoNcutoff, ]
+            print(head(df))
+            
+        } else {
+            
+            if (peakFilter == "topN") {
+                
+                message("Not implemented yet!")
+                
+            }
+            
+        }
+        
+        ## 3. aggregation
         message(paste("Aggregating peaks in", binSize, "m/z bins by", fun, sep = " "))
-        sV <- Matrix::sparseVector(x = S$int, i = S$pos, length = x$massRange[2]/binSize)
-        message(paste("Returned sparse vector represents the m/z interval from [", 0, "to", x$massRange[2], "]"))
+        df <- aggregate(int ~ bin, data = df, FUN = fun)
+        print(head(df))
         
+        ## 4. sparse vector creation
+        switch (vType,
+            sV = {
+                
+                ## sparse vector
+                message(paste("Generating sparse vector for m/z interval [",
+                              0, ",", x$massRange[2], "]"))
+                sV <- Matrix::sparseVector(x = df$int,
+                                           i = df$bin,
+                                           length = x$massRange[2]/binSize)
+                return(sV)
+                
+            },
+            scV = {
+                
+                ## sparse column vector
+                message(paste("Generating sparse column vector for m/z interval [",
+                              0, ",", x$massRange[2], "]"))
+                scM <- Matrix::sparseMatrix(x = df$int,
+                                            i = df$bin,
+                                            j = rep(1, length(df$int)),
+                                            dims = c(x$massRange[2]/binSize, 1))
+                return(scM)
+                
+            },
+            srV = {
+                
+                ## a sparse row vector
+                message(paste("Generating sparse row vector for m/z interval [",
+                              0, ",", x$massRange[2], "]"))
+                srM <- Matrix::sparseMatrix(x = df$int,
+                                            i = rep(1, length(df$int)),
+                                            j = df$bin,
+                                            dims = c(1, x$massRange[2]/binSize))
+                return(srM)
+                
+            },
+            stop("Invalid vType!")
+        )
         
     } else {
         
         stop("The rawRspectrum instance does not contain a centroided stream!")
     
       }
-    
-    return(sV)
 }
 
 
