@@ -1096,7 +1096,7 @@ as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
             
             if (peakFilter == "topN") {
                 
-                message("Not implemented yet!")
+                warning("Peak filtering with topN option is not available yet!")
                 
             }
             
