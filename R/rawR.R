@@ -1176,7 +1176,7 @@ as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
 #' @export normDotProt
 #'
 #' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
-#' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]])
+#' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]], vType = "sV")
 #' normDotProt(sS, sS)
 normDotProt <- function(x, y){
     
