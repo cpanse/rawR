@@ -1020,12 +1020,13 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #' A sparse vector representation of \code{rawRspectrum}
 #'
 #' @param x A \code{rawSpectrum} object
-#' @param binSize Bin size along m/z dimension used to aggregate centroided intensity values.
+#' @param mzBinSize Bin size along m/z dimension used to aggregate centroided intensity values.
 #' @param fun Function used for aggregation of signals within bins.
 #' @param StoNcutoff A S/N cutoff applied for peak filtering 
 #' @param vType Either \code{sV} for a sparse vector,
 #' \code{scV} for a sparse column vector (matrix type),
 #' or \code{srV} for a sparse row vector (matrix type).
+#' @param mzBinRange Range 
 #' 
 #' @author Tobias Kockmann
 #'
@@ -1058,13 +1059,14 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #'
 #' ## Generate sparse vector
 #' as_sparseVector(S[[1]], vType = "sV")
-as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
-                            topN = 100, vType = "srV", peakFilter = "StoN"){
+as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
+                            topN = 100, vType = "srV", peakFilter = "StoN",
+                            mzBinRange = NULL){
 
  ## TODO : add option to subset on S/N [x]
  ## TODO : add possibility to subset on order/rank, topN []
      
-    stopifnot(is.rawRspectrum(x), is.numeric(binSize), is.numeric(StoNcutoff),
+    stopifnot(is.rawRspectrum(x), is.numeric(mzBinSize), is.numeric(StoNcutoff),
               is.numeric(topN), is.character(vType), is.character(peakFilter))
     
     if (x$centroidStream) {
@@ -1076,7 +1078,7 @@ as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
                         n = x$noises,
                         r = x$resolutions,
                         b = x$baselines,
-                        bin = x$centroid.mZ %/% binSize,
+                        mzBin = x$centroid.mZ %/% mzBinSize,
                         sn = x$centroid.intensity/x$noises,
                         rint = x$centroid.intensity/max(x$centroid.intensity),
                         order = order(x$centroid.intensity/x$noises, decreasing = FALSE))
@@ -1103,46 +1105,75 @@ as_sparseVector <- function(x, binSize = 1, fun = "sum", StoNcutoff = 3,
         }
         
         ## 3. aggregation
-        message(paste("Aggregating peaks in", binSize, "m/z bins by", fun, sep = " "))
-        df <- aggregate(int ~ bin, data = df, FUN = fun)
+        message(paste("Aggregating peaks in", mzBinSize, "m/z bins by", fun, sep = " "))
+        df <- aggregate(int ~ mzBin, data = df, FUN = fun)
         print(head(df))
         
         ## 4. sparse vector creation
+        
+        ## TODO make sV creation with fixed mzBinRange possible []
+        
         switch (vType,
             sV = {
-                
-                ## sparse vector
-                message(paste("Generating sparse vector for m/z interval [",
-                              0, ",", x$massRange[2], "]"))
-                sV <- Matrix::sparseVector(x = df$int,
-                                           i = df$bin,
-                                           length = x$massRange[2]/binSize)
-                return(sV)
-                
+                ## sparse vector branch
+                if (is.null(mzBinRange)) {
+                    
+                    message(paste("Generating sparse vector for m/z interval [",
+                                  0, ",", x$massRange[2], "]"))
+                    sV <- Matrix::sparseVector(x = df$int,
+                                               i = df$mzBin,
+                                               length = x$massRange[2]/mzBinSize)
+                    return(sV)
+                    
+                } else {
+                    
+                    stopifnot(is.numeric(mzBinRange), length(mzBinRange) == 2, mzBinRange[1] < mzBinRange[2])
+                    message(paste("Generating sparse vector for m/z range [",
+                                  mzBinRange[1], ",", mzBinRange[2], "]"))
+                    sV <- Matrix::sparseVector(x = df$int,
+                                               i = df$mzBin-mzBinRange[1]+1,
+                                               length = (mzBinRange[2]-mzBinRange[1])/mzBinSize)
+                    return(sV)
+                    
+                }
             },
             scV = {
                 
                 ## sparse column vector
-                message(paste("Generating sparse column vector for m/z interval [",
-                              0, ",", x$massRange[2], "]"))
-                scM <- Matrix::sparseMatrix(x = df$int,
-                                            i = df$bin,
-                                            j = rep(1, length(df$int)),
-                                            dims = c(x$massRange[2]/binSize, 1))
-                return(scM)
+                if (is.null(mzBinRange)) {
+                    
+                    message(paste("Generating sparse column vector for m/z interval [",
+                                  0, ",", x$massRange[2], "]"))
+                    scM <- Matrix::sparseMatrix(x = df$int,
+                                                i = df$mzBin,
+                                                j = rep(1, length(df$int)),
+                                                dims = c(x$massRange[2]/mzBinSize, 1))
+                    return(scM)
+                    
+                } else {
+                    
+                    warning("mzBinRange parameter usage not implemented yet!")
                 
+                }
             },
             srV = {
                 
                 ## a sparse row vector
-                message(paste("Generating sparse row vector for m/z interval [",
-                              0, ",", x$massRange[2], "]"))
-                srM <- Matrix::sparseMatrix(x = df$int,
-                                            i = rep(1, length(df$int)),
-                                            j = df$bin,
-                                            dims = c(1, x$massRange[2]/binSize))
-                return(srM)
-                
+                if (is.null(mzBinRange)) {
+                    
+                    message(paste("Generating sparse row vector for m/z interval [",
+                                  0, ",", x$massRange[2], "]"))
+                    srM <- Matrix::sparseMatrix(x = df$int,
+                                                i = rep(1, length(df$int)),
+                                                j = df$mzBin,
+                                                dims = c(1, x$massRange[2]/mzBinSize))
+                    return(srM)
+                    
+                } else {
+                    
+                    warning("mzBinRange parameter usage not implemented yet!")
+                    
+                }
             },
             stop("Invalid vType!")
         )
