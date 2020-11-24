@@ -534,11 +534,25 @@ readChromatogram <- function(rawfile,
 #' @return Object of class \code{rawRspectrum}
 #' @export new_rawRspectrum
 #'
-#' @examples
-new_rawRspectrum <- function(scan = numeric(), massRange = numeric(),
-                             scanType = character(), rtinseconds = numeric(),
+#' @examples S <- new_rawRspectrum()
+new_rawRspectrum <- function(scan = numeric(),
+                             massRange = numeric(),
+                             scanType = character(),
+                             rtinseconds = numeric(),
+                             pepmass = numeric(),
                              centroidStream = logical(),
-                             mZ = numeric(), intensity = numeric()){
+                             HasCentroidStream = character(),
+                             centroid.mZ = numeric(),
+                             centroid.intensity = numeric(),
+                             title = character(),
+                             charge = numeric(),
+                             monoisotopicMz = numeric(),
+                             mZ = numeric(),
+                             intensity = numeric(),
+                             noises = numeric(),
+                             resolutions = numeric(),
+                             charges = numeric(),
+                             baselines = numeric()){
     
     stopifnot(is.numeric(scan), is.numeric(massRange), is.character(scanType),
               is.numeric(rtinseconds), is.logical(centroidStream),
@@ -547,10 +561,24 @@ new_rawRspectrum <- function(scan = numeric(), massRange = numeric(),
     
     structure(list(scan = scan,
                    basePeak = c(mZ[which.max(intensity)], intensity[which.max(intensity)]),
-                   TIC = sum(intensity), massRange = massRange,
-                   scanType = scanType, rtinseconds = rtinseconds,
+                   TIC = sum(intensity),
+                   massRange = massRange,
+                   scanType = scanType,
+                   rtinseconds = rtinseconds,
+                   pepmass = pepmass,
                    centroidStream = centroidStream,
-                   mZ = mZ, intensity = intensity),
+                   HasCentroidStream = HasCentroidStream,
+                   centroid.mZ = centroid.mZ,
+                   centroid.intensity = centroid.intensity,
+                   title = title,
+                   charge = charge,
+                   monoisotopicMz = monoisotopicMz,
+                   mZ = mZ,
+                   intensity = intensity,
+                   noises = noises,
+                   resolutions = resolutions,
+                   charges = charges,
+                   baselines = baselines),
               class = "rawRspectrum")
 
 }
@@ -581,11 +609,29 @@ rawRspectrum <- function(sim = character()) {
         S <- new_rawRspectrum(scan = 1,
                               massRange = c(90, 1510),
                               rtinseconds = 1,
-                              scanType = "simulated",
+                              scanType = "example 1",
                               centroidStream = FALSE,
                               mZ = 1:15*100,
                               intensity = rep(100, times = 15)
                               )
+    }
+    
+    if (sim == "example_2") {
+        S <- new_rawRspectrum(scan = 1,
+                              massRange = c(90, 1510),
+                              scanType = "example 2",
+                              rtinseconds = 1,
+                              pepmass = c(NA, NA),
+                              centroidStream = TRUE,
+                              centroid.mZ = 1:15*100,
+                              centroid.intensity = rep(100, times = 15),
+                              mZ = 1:15*100,
+                              intensity = rep(100, times = 15),
+                              noises = rep(10, times = 15),
+                              resolutions = rep(30000, times = 15),
+                              charges = rep(2, times = 15),
+                              baselines = rep(10, times = 15)
+        )
     }
     
     if (sim == "TESTPEPTIDE") {
@@ -1060,7 +1106,7 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #' ## Generate sparse vector
 #' as_sparseVector(S[[1]], vType = "sV")
 as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
-                            topN = 100, vType = "srV", peakFilter = "StoN",
+                            topN = 100, vType = "sV", peakFilter = "StoN",
                             mzBinRange = NULL){
 
  ## TODO : add option to subset on S/N [x]
@@ -1085,24 +1131,31 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
         
         message("The original centroided data:")
         print(head(df))
+        #print(str(df))
         
-        ## 2. filtering
-        if (peakFilter == "StoN") {
+        ## 2. peak filtering
+        if (peakFilter == "StoN" && is.null(mzBinRange)) {
             
             ## subsetting on S/N
-            message(paste("Subsetting with S/N cutoff:", StoNcutoff, sep = " "))
+            message(paste("Filtering with S/N cutoff:", StoNcutoff, sep = " "))
             df <- df[df$sn > StoNcutoff, ]
             print(head(df))
             
-        } else {
-            
-            if (peakFilter == "topN") {
+        } else { if (peakFilter == "StoN") {
                 
-                warning("Peak filtering with topN option is not available yet!")
-                
-            }
+                   ## subsetting on S/N AND m/z range
+                   message(paste("Filtering with S/N cutoff:", StoNcutoff,
+                                 "AND m/z range [", mzBinRange[1], ",", mzBinRange[2], "]", sep = " "))
+                   df <- df[(df$sn > StoNcutoff) & (df$pos >= mzBinRange[1]) & (df$pos <= mzBinRange[2]), ]
+                   print(head(df))
             
-        }
+                } else { if (peakFilter == "topN") {
+                        
+                           warning("Peak filtering with topN option is not available yet!")
+                        
+                         }
+                  }
+          }
         
         ## 3. aggregation
         message(paste("Aggregating peaks in", mzBinSize, "m/z bins by", fun, sep = " "))
@@ -1111,35 +1164,33 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
         
         ## 4. sparse vector creation
         
-        ## TODO make sV creation with fixed mzBinRange possible []
+        ## TODO make sV creation with fixed mzBinRange possible [x]
         
         switch (vType,
             sV = {
                 ## sparse vector branch
                 if (is.null(mzBinRange)) {
-                    
+                    ## default behavior : m/z range will be the same as massRange
                     message(paste("Generating sparse vector for m/z interval [",
-                                  0, ",", x$massRange[2], "]"))
+                                  x$massRange[1], "," , x$massRange[2], "]"))
                     sV <- Matrix::sparseVector(x = df$int,
-                                               i = df$mzBin,
-                                               length = x$massRange[2]/mzBinSize)
+                                               i = df$mzBin-x$massRange[1]+1,
+                                               length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
                     return(sV)
                     
                 } else {
-                    
-                    stopifnot(is.numeric(mzBinRange), length(mzBinRange) == 2, mzBinRange[1] < mzBinRange[2])
+                    ## user supplied mass range is used
                     message(paste("Generating sparse vector for m/z range [",
                                   mzBinRange[1], ",", mzBinRange[2], "]"))
                     sV <- Matrix::sparseVector(x = df$int,
                                                i = df$mzBin-mzBinRange[1]+1,
-                                               length = (mzBinRange[2]-mzBinRange[1])/mzBinSize)
+                                               length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
                     return(sV)
                     
                 }
             },
             scV = {
-                
-                ## sparse column vector
+                ## sparse column vector branch
                 if (is.null(mzBinRange)) {
                     
                     message(paste("Generating sparse column vector for m/z interval [",
