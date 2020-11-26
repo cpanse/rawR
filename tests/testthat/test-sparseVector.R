@@ -24,3 +24,9 @@ test_that("conversion to sV works with example_2 data", {
   expect_equal(sum(sV), 400)
   
 })
+
+## TODO : insert test that uses spectrum without centroided data
+
+test_that("error when using spectrum without centroided data", {
+  expect_error(as_sparseVector(rawRspectrum(sim = "example_1")))
+})
