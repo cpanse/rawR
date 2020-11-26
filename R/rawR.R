@@ -1206,7 +1206,7 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
         ## TODO : try try [x] ;-)
         ## TODO : make sure that mzBinSize is set correctly []
         message(paste("Aggregating peaks in", mzBinSize, "m/z bins by", fun, sep = " "))
-        try({df <- aggregate(int ~ mzBin, data = df, FUN = fun)})
+        try(df <- aggregate(int ~ mzBin, data = df, FUN = fun), silent = TRUE)
         
         
         ## 4. sparse vector creation
