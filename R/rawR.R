@@ -528,8 +528,20 @@ readChromatogram <- function(rawfile,
 #' @param scanType Character string describing the scan type.
 #' @param rtinseconds Retention time in seconds
 #' @param centroidStream Logical indicating if centroided data is available
+#' @param pepmass TODO
+#' @param HasCentroidStream TODO
+#' @param centroid.mZ Numeric vector of centroid m/z values
+#' @param centroid.intensity Numeric vector of centroid intensity values
+#' @param title A scan title
+#' @param charge TODO
+#' @param monoisotopicmZ TODO
 #' @param mZ m/z values
 #' @param intensity Intensity values
+#' @param noises A numeric vector of centroid baseline values
+#' @param resolutions A numeric vector of centroid resolutions
+#' @param charges A numeric vector of centroid charge states
+#' @param baselines A numeric vector of centroid baseline values
+#' 
 #'
 #' @return Object of class \code{rawRspectrum}
 #' @export new_rawRspectrum
@@ -1067,28 +1079,56 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #'
 #' @param x A \code{rawSpectrum} object
 #' @param mzBinSize Bin size along m/z dimension used to aggregate centroided intensity values.
+#' The default is \code{1}.
 #' @param fun Function used for aggregation of signals within bins.
-#' @param StoNcutoff A S/N cutoff applied for peak filtering 
+#' The default is \code{sum} 
+#' @param StoNcutoff A S/N cutoff applied for peak filtering. All peaks below this
+#' cutoff are removed prior to aggregation. The default is \code{3}.
 #' @param vType Either \code{sV} for a sparse vector,
-#' \code{scV} for a sparse column vector (matrix type),
-#' or \code{srV} for a sparse row vector (matrix type).
-#' @param mzBinRange Range 
+#' \code{scV} for a sparse column vector,
+#' or \code{srV} for a sparse row vector. The default is \code{sV}.
+#' @param mzBinRange A m/z range of the form [lower bound, upper bound].
+#' This parameter determines the desired m/z range used for sparse vector creation.
+#' The default is \code{NULL}.See details for more explanation. 
+#' @param topN The number of peaks used for top-down filtering according to intensity.
+#' @param peakFilter Either \code{StoN} for signal/noise based filtering or
+#' \code{topN} for rank based filtering.
 #' 
 #' @author Tobias Kockmann
 #'
 #' @description Function converts the centroided peak information stored in a
-#' \code{rawRspectrum} object into a sparse vector/matrix representation. This is
+#' \code{rawRspectrum} object into a sparse vector representation. This is
 #' primarily useful for spectrum vs. spectrum comparisons that rely on vector
-#' arithmetics like dot product. Since centroided data can be very sparse, we
-#' chose to use sparse instead of dense vectors/matrises.
+#' arithmetic like dot products. Since centroided data can be very sparse,
+#' especially when combined with noise or top-down filtering, we chose to use
+#' sparse instead of dense vectors.
 #' 
-#' @details The input spectrum is divided into m/z bins of equal size (see binSize parameter)
-#' and each bin is assigned a certain weight, calculated by using an aggregation function
-#' (see fun parameter). Typically \code{sum} or \code{max} are used. The binned spectrum is
-#' than converted into a sparse vector. The i index of none zero values goes
-#' along the m/z bins.
+#' @details The input spectrum is first filtered according to the \code{peakFilter}
+#' AND \code{mzBinRange} parameters, second divided into m/z bins of equal size
+#' defined by the \code{binSize} parameter and each bin is assigned a certain weight
+#' by applying a function \code{fun} for intensity aggregation within each bin.
+#' Typically \code{sum} (default) or \code{max} are used. The binned spectrum is
+#' than converted into a sparse vector, sparse column vector (a sparse matrix),
+#' or a sparse row vector (a sparse matrix) depending on the choice of \code{vType}.
+#' For sparse vectors the index \code{i} of none zero values goes along the m/z bins.
+#' The same is true for sparse column vectors. For sparse row vectors \code{j}
+#' runs along the m/z dimension.
+#' 
+#' The default behavior of the function is to use the same m/z range for vector
+#' constructor as the mass range set for spectrum recording. Example: The spectrum
+#' was recorded for 350-1800 m/z than the sparse vector would cover the m/z
+#' range [350, 1800] in arbitrary m/z bins. This default behavior can be overwritten
+#' by defining a custom \code{mzBinRange}. If the custom range is a sub range
+#' of the mass range used for recording the obvious things happen. Be aware
+#' that the current implementation can silently expand your sparse vector into
+#' regions that were NOT covered by the original data! You could for instance set
+#' the \code{mzBinRange} to [100, 2000] for a scan that contains measurement data
+#' for 350-1800 m/z. All bins representing 100-350 and 1800-2000 will have zero
+#' weight although this is formally not correct, since the spectrum did not
+#' contain measurement data in these areas. Future versions might be improved
+#' by returning \code{NA} as weight for these "extrapolated" bins.
 #'
-#' @return A sparse object depending on \code{vType}
+#' @return A sparse vector.
 #' @export as_sparseVector
 #'
 #' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
@@ -1109,12 +1149,17 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
                             topN = 100, vType = "sV", peakFilter = "StoN",
                             mzBinRange = NULL){
 
+    if (!requireNamespace("Matrix", quietly = TRUE)) {
+        stop("Package \"pkg\" needed for this function to work. Please install it.",
+             call. = FALSE)
+    }
+    
  ## TODO : add option to subset on S/N [x]
  ## TODO : add possibility to subset on order/rank, topN []
      
     stopifnot(is.rawRspectrum(x), is.numeric(mzBinSize), is.numeric(StoNcutoff),
               is.numeric(topN), is.character(vType), is.character(peakFilter))
-    
+        
     if (x$centroidStream) {
         
         ## 1. org. centroided data
@@ -1157,14 +1202,16 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
                   }
           }
         
-        ## 3. aggregation
+        ## 3. peak aggregation
+        ## TODO : try try [x] ;-)
+        ## TODO : make sure that mzBinSize is set correctly []
         message(paste("Aggregating peaks in", mzBinSize, "m/z bins by", fun, sep = " "))
-        df <- aggregate(int ~ mzBin, data = df, FUN = fun)
-        print(head(df))
+        try({df <- aggregate(int ~ mzBin, data = df, FUN = fun)})
+        
         
         ## 4. sparse vector creation
-        
         ## TODO make sV creation with fixed mzBinRange possible [x]
+        ## TODO make save to empty peak list case, sV[x], scV[], srV[]
         
         switch (vType,
             sV = {
@@ -1173,20 +1220,31 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
                     ## default behavior : m/z range will be the same as massRange
                     message(paste("Generating sparse vector for m/z interval [",
                                   x$massRange[1], "," , x$massRange[2], "]"))
-                    sV <- Matrix::sparseVector(x = df$int,
-                                               i = df$mzBin-x$massRange[1]+1,
+                    sV <- Matrix::sparseVector(x = numeric(),
+                                               i = numeric(),
                                                length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
+                    try({
+                      sV <- Matrix::sparseVector(x = df$int,
+                                                 i = df$mzBin-x$massRange[1]+1,
+                                                 length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
+                    })
                     return(sV)
                     
                 } else {
                     ## user supplied mass range is used
                     message(paste("Generating sparse vector for m/z range [",
                                   mzBinRange[1], ",", mzBinRange[2], "]"))
-                    sV <- Matrix::sparseVector(x = df$int,
-                                               i = df$mzBin-mzBinRange[1]+1,
-                                               length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
-                    return(sV)
                     
+                    sV <- Matrix::sparseVector(x = numeric(),
+                                               i = numeric(),
+                                               length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
+                    
+                    try({
+                        sV <- Matrix::sparseVector(x = df$int,
+                                                   i = df$mzBin-mzBinRange[1]+1,
+                                                   length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
+                    })
+                    return(sV)
                 }
             },
             scV = {
