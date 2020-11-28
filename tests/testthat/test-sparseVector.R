@@ -7,8 +7,9 @@ I <- readIndex(rawfile = sampleData())
 
 test_that("conversion to sV works for sample data, scan 1", {
   expect_s4_class(as_sparseVector(S[[1]], vType = "sV"), "dsparseVector")
-  expect_s4_class(as_sparseVector(S[[1]], vType = "scV"), "dgCMatrix")
-  expect_s4_class(as_sparseVector(S[[1]], vType = "srV"), "dgCMatrix")
+  #expect_s4_class(as_sparseVector(S[[1]], vType = "scV"), "dgCMatrix")
+  expect_s4_class(as_sparseVector(S[[1]], vType = "scV"), "dgTMatrix")
+  #expect_s4_class(as_sparseVector(S[[1]], vType = "srV"), "dgTMatrix")
 })
 
 test_that("conversion to sV works for all MS scans in sample data", {
