@@ -1174,17 +1174,18 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
                         rint = x$centroid.intensity/max(x$centroid.intensity),
                         order = order(x$centroid.intensity/x$noises, decreasing = FALSE))
         
-        message("The original centroided data:")
-        print(head(df))
+        #message("The original centroided data:")
+        #print(head(df))
         #print(str(df))
         
-        ## 2. peak filtering
+        ## 2. peak filtering 
+        ## TODO : replace nested if else with switch []
         if (peakFilter == "StoN" && is.null(mzBinRange)) {
             
             ## subsetting on S/N
             message(paste("Filtering with S/N cutoff:", StoNcutoff, sep = " "))
             df <- df[df$sn > StoNcutoff, ]
-            print(head(df))
+            #print(head(df))
             
         } else { if (peakFilter == "StoN") {
                 
@@ -1192,7 +1193,7 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
                    message(paste("Filtering with S/N cutoff:", StoNcutoff,
                                  "AND m/z range [", mzBinRange[1], ",", mzBinRange[2], "]", sep = " "))
                    df <- df[(df$sn > StoNcutoff) & (df$pos >= mzBinRange[1]) & (df$pos <= mzBinRange[2]), ]
-                   print(head(df))
+                   #print(head(df))
             
                 } else { if (peakFilter == "topN") {
                         
@@ -1313,14 +1314,19 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
 #' @param y A sparse vector
 #'
 #' @return A numeric value between 0 and 1 equal to the normalized dot product.
-#' @export normDotProt
+#' @export normDotProd
 #'
 #' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
 #' sS <- as_sparseVector(readSpectrum(pathToRawFile, scan = 1)[[1]], vType = "sV")
-#' normDotProt(sS, sS)
-normDotProt <- function(x, y){
+#' normDotProd(sS, sS)
+normDotProd <- function(x, y){
     
     stopifnot(is(x, "sparseVector"), is(y, "sparseVector"), length(x) == length(y))
     
     sum(x*y)/(sqrt(sum(x^2))*sqrt(sum(y^2)))
+}
+
+
+sampleData <- function(){
+    file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
 }
