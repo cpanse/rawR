@@ -1107,12 +1107,18 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #' AND \code{mzBinRange} parameters, second divided into m/z bins of equal size
 #' defined by the \code{binSize} parameter and each bin is assigned a certain weight
 #' by applying a function \code{fun} for intensity aggregation within each bin.
-#' Typically \code{sum} (default) or \code{max} are used. The binned spectrum is
-#' than converted into a sparse vector, sparse column vector (a sparse matrix),
-#' or a sparse row vector (a sparse matrix) depending on the choice of \code{vType}.
+#' Typically \code{sum} (default) or \code{max} are used.
+#' 
+#' The binned spectrum is
+#' converted into a sparse vector or sparse column vector (a sparse matrix),
+#' depending on the choice of \code{vType}. This might change in the future,
+#' since different output types in dependence of function parameters might be
+#' a problematic behavior for programming. Instead, the transpose function could
+#' be used outside of \code{as_sparseVector} calls.
+#' 
+#' 
 #' For sparse vectors the index \code{i} of none zero values goes along the m/z bins.
-#' The same is true for sparse column vectors. For sparse row vectors \code{j}
-#' runs along the m/z dimension.
+#' The same is true for sparse column vectors.
 #' 
 #' The default behavior of the function is to use the same m/z range for vector
 #' constructor as the mass range set for spectrum recording. Example: The spectrum
@@ -1128,7 +1134,7 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #' contain measurement data in these areas. Future versions might be improved
 #' by returning \code{NA} as weight for these "extrapolated" bins.
 #'
-#' @return A sparse vector.
+#' @return A sparse vector or a sparse matrix
 #' @export as_sparseVector
 #'
 #' @examples pathToRawFile <- file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
@@ -1136,9 +1142,6 @@ plot.rawRchromatogramSet <- function(x, diagnostic = FALSE, ...){
 #' S <- readSpectrum(pathToRawFile, 1:dim(I)[1])
 #' sV <- lapply(S[I[I$MSOrder == "Ms", "scan"]], as_sparseVector)
 #' plot(sV[[1]], type = "h")
-#' 
-#' ## Generate sparse row vector
-#' as_sparseVector(S[[1]], vType = "srV")
 #' 
 #' ## Generate sparse column vector
 #' as_sparseVector(S[[1]], vType = "scV")
@@ -1212,78 +1215,60 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
         
         ## 4. sparse vector creation
         ## TODO make sV creation with fixed mzBinRange possible [x]
-        ## TODO make save to empty peak list case, sV[x], scV[], srV[]
+        ## TODO make save to empty peak list case, sV[x], scV[x]
+        
+        ## helper function
+        sVini <- function(x, df, mzBinRange) {
+            
+            if (is.null(mzBinRange)) {
+                ## default behavior : m/z range will be the same as massRange
+                message(paste("Generating sparse vector for m/z interval [",
+                              x$massRange[1], "," , x$massRange[2], "]"))
+                sV <- Matrix::sparseVector(x = numeric(),
+                                           i = numeric(),
+                                           length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
+                try({
+                    sV <- Matrix::sparseVector(x = df$int,
+                                               i = df$mzBin-x$massRange[1]+1,
+                                               length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
+                })
+                return(sV)
+                
+            } else {
+                ## user supplied mass range is used
+                message(paste("Generating sparse vector for m/z range [",
+                              mzBinRange[1], ",", mzBinRange[2], "]"))
+                
+                sV <- Matrix::sparseVector(x = numeric(),
+                                           i = numeric(),
+                                           length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
+                
+                try({
+                    sV <- Matrix::sparseVector(x = df$int,
+                                               i = df$mzBin-mzBinRange[1]+1,
+                                               length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
+                })
+                return(sV)
+            }
+            
+        }
+        
+        ## initiate sparse vector by above helper function
+        sV <- sVini(x, df, mzBinRange)
         
         switch (vType,
             sV = {
                 ## sparse vector branch
-                if (is.null(mzBinRange)) {
-                    ## default behavior : m/z range will be the same as massRange
-                    message(paste("Generating sparse vector for m/z interval [",
-                                  x$massRange[1], "," , x$massRange[2], "]"))
-                    sV <- Matrix::sparseVector(x = numeric(),
-                                               i = numeric(),
-                                               length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
-                    try({
-                      sV <- Matrix::sparseVector(x = df$int,
-                                                 i = df$mzBin-x$massRange[1]+1,
-                                                 length = x$massRange[2]-x$massRange[1]+1/mzBinSize)
-                    })
-                    return(sV)
-                    
-                } else {
-                    ## user supplied mass range is used
-                    message(paste("Generating sparse vector for m/z range [",
-                                  mzBinRange[1], ",", mzBinRange[2], "]"))
-                    
-                    sV <- Matrix::sparseVector(x = numeric(),
-                                               i = numeric(),
-                                               length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
-                    
-                    try({
-                        sV <- Matrix::sparseVector(x = df$int,
-                                                   i = df$mzBin-mzBinRange[1]+1,
-                                                   length = (mzBinRange[2]-mzBinRange[1]+1)/mzBinSize)
-                    })
-                    return(sV)
-                }
+                return(sV)
             },
             scV = {
                 ## sparse column vector branch
-                if (is.null(mzBinRange)) {
-                    
-                    message(paste("Generating sparse column vector for m/z interval [",
-                                  0, ",", x$massRange[2], "]"))
-                    scM <- Matrix::sparseMatrix(x = df$int,
-                                                i = df$mzBin,
-                                                j = rep(1, length(df$int)),
-                                                dims = c(x$massRange[2]/mzBinSize, 1))
-                    return(scM)
-                    
-                } else {
-                    
-                    warning("mzBinRange parameter usage not implemented yet!")
-                
-                }
+                return(as(sV, "Matrix"))
             },
             srV = {
-                
-                ## a sparse row vector
-                if (is.null(mzBinRange)) {
-                    
-                    message(paste("Generating sparse row vector for m/z interval [",
-                                  0, ",", x$massRange[2], "]"))
-                    srM <- Matrix::sparseMatrix(x = df$int,
-                                                i = rep(1, length(df$int)),
-                                                j = df$mzBin,
-                                                dims = c(1, x$massRange[2]/mzBinSize))
-                    return(srM)
-                    
-                } else {
-                    
-                    warning("mzBinRange parameter usage not implemented yet!")
-                    
-                }
+                ## sparse row vector branch
+                warning("Not supported directly. Please use t(as_sparseVector(x , vType = \"scV\")).")
+                return()
             },
             stop("Invalid vType!")
         )
