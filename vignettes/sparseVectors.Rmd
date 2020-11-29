@@ -1,0 +1,52 @@
+---
+title: "Using sparseVectors"
+author: "Tobias Kockmann"
+date: "11/28/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reference spectrun
+
+```{r conversion}
+library(rawR)
+rawfile <- file.path(Sys.getenv('HOME'), "Downloads", "20181113_010_autoQC01.raw")
+LGGNEQVTR <- rawR::readSpectrum(rawfile = rawfile, scan = 9594)[[1]]
+summary(LGGNEQVTR)
+plot(LGGNEQVTR)
+plot(rawR::as_sparseVector(LGGNEQVTR), type = "h", frame.plot = FALSE)
+plot(rawR::as_sparseVector(LGGNEQVTR, StoNcutoff = 10), type = "h", frame.plot = FALSE)
+show(rawR::as_sparseVector(LGGNEQVTR, StoNcutoff = 10))
+ref <- rawR::as_sparseVector(LGGNEQVTR, StoNcutoff = 10)
+```
+
+
+## Comparing a reference spectrum to all MS2 spectra of a file
+
+```{r, message=FALSE}
+I <- rawR::readIndex(rawfile = rawfile)
+ms2 <- I[I$MSOrder == "Ms2", "scan"]
+S <- rawR::readSpectrum(rawfile = rawfile, scan = ms2)
+
+## TADA TADA TADA
+
+mzBinRange <- c(100, 1015)
+sVset <- lapply(S, as_sparseVector, mzBinRange = mzBinRange)
+dotp <- lapply(sVset, normDotProd, y = ref)
+
+## :-)
+
+summary(unlist(dotp))
+hist(unlist(dotp), breaks = 100)
+head(sort(unlist(dotp), decreasing = TRUE), n = 20)
+plot(unlist(dotp))
+
+## How does the top hit spectrum look like?
+
+winner <- I[ms2,][which.max(dotp),]
+plot(readSpectrum(rawfile = rawfile, scan = winner$scan)[[1]])
+```
+
