@@ -1285,15 +1285,14 @@ as_sparseVector <- function(x, mzBinSize = 1, fun = "sum", StoNcutoff = 3,
 #'
 #' @author Tobias Kockmann
 #' @description The function calculates the normalized dot product of two sparse
-#' vectors given they are of equal dimentionality (length). The normalized dot
-#' product is also called the cosine distance between two vectors.
+#' vectors given they are of equal dimentionality (same number of components).
+#' The normalized dot product is also called the cosine distance between two vectors.
 #' 
 #' @details See Eq. 6 of Yilmaz Ş, Vandermarliere E, Martens L.
 #' Methods to Calculate Spectrum Similarity. Methods Mol Biol. 2017;1549:75-100.
 #' doi: 10.1007/978-1-4939-6740-7_7. PMID: 27975285.
 #' 
-#' \deqn{ \cos\theta = \frac{\sum(x \times y)}{sqrt(\sum(x^2))sqrt(\sum(y^2))}}
-#'  
+#' \deqn{ \cos \theta = \frac{\sum x_{i} \times y_{i}}{\sqrt{\sum x_{i}^2}\sqrt{\sum y_{i}^2}} }
 #'
 #' @param x A sparse vector
 #' @param y A sparse vector
@@ -1311,6 +1310,30 @@ normDotProd <- function(x, y){
     sum(x*y)/(sqrt(sum(x^2))*sqrt(sum(y^2)))
 }
 
+relativize <- function(x){
+    stopifnot(is(x, "sparseVector"))
+    x/max(x)
+}
+
+#' Normalize a spectral sparse vector
+#'
+#' @param x A sparse vector
+#' 
+#' @description Each component of x along index i is divided by the length
+#' of x, sometimes also denoted |x|
+#' 
+#' @details 
+#' \deqn{y = \frac{x_{i}}{\sqrt{\sum x_{i}^2}}}
+#'
+#' @return A normalized sparse vector.
+#' @export normalize
+#'
+#' @examples x <- as_sparseVector(rawRspectrum(sim = "example_2"))
+#' normalize(x)
+normalize <- function(x){
+    stopifnot(is(x, "sparseVector"))
+    x/(sqrt(sum(x^2)))
+}
 
 sampleData <- function(){
     file.path(path.package(package = 'rawR'), 'extdata', 'sample.raw')
