@@ -65,3 +65,11 @@ test_that("normDotProd returns values in [0,1]", {
   expect_equal(max(z, na.rm = TRUE), 1)
 })
 
+test_that("sparse vector normalization works correctly", {
+  x <- as_sparseVector(rawRspectrum(sim = "example_2"))
+  expect_s4_class(normalize(x), "dsparseVector")
+  expect_length(normalize(x), length(x))
+  vlength <- function(x) {sqrt(sum(x^2))}
+  expect_equal(vlength(normalize(x)), 1)
+})
+
