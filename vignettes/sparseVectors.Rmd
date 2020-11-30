@@ -41,7 +41,7 @@ dotp <- lapply(sVset, normDotProd, y = ref)
 
 summary(unlist(dotp))
 hist(unlist(dotp), breaks = 100)
-head(sort(unlist(dotp), decreasing = TRUE), n = 20)
+top20_a <- head(sort(unlist(dotp), decreasing = TRUE), n = 20)
 plot(unlist(dotp))
 
 ## How does the top hit spectrum look like?
@@ -50,3 +50,41 @@ winner <- I[ms2,][which.max(dotp),]
 plot(readSpectrum(rawfile = rawfile, scan = winner$scan)[[1]])
 ```
 
+## Alternative way using vector normalization and the basic dot product
+
+The `normDotProd` function computes the normalized dot product from two sparse spectral vectors. An alternative way of doing this is using the matrix multiplication function `%*%` in combination with prior vector normalization. The matrix product `%*%` is also available for `sparseVector` objects.
+
+Sparse vector normalization is done by dividing each vector component $x_{i}$ by the vector length $|x|$ (not to be confused with `length(x)`):
+
+$$x' = \frac{x_{i}}{|x|}  =\frac{x_{i}}{\sqrt{\sum x_{i}^2}}$$
+Once the vectors x and y have been normalized, one can use the matrix product `x %*% y` to compute a normalized dot product:
+
+```{r}
+plot(ref, type = "h", frame.plot = FALSE, main = "reference vector")
+plot(normalize(ref), type = "h", frame.plot = FALSE, main = "normalized reference vector")
+
+## The normalized dot product for the winner scan
+normalize(as_sparseVector(readSpectrum(rawfile = rawfile, scan = winner$scan)[[1]], mzBinRange = mzBinRange)) %*% normalize(ref)
+## :-)
+
+## ...and for all MS2 scans
+nsVset <- lapply(sVset, normalize)
+dotp <- lapply(nsVset, `%*%`, y = normalize(ref))
+summary(unlist(lapply(dotp, as.numeric)))
+top20_b <- head(sort(unlist(lapply(dotp, as.numeric)), decreasing = TRUE), n = 20)
+
+## Do the two ways give equal results?
+all.equal(top20_a, top20_b)
+```
+
+Why does this work? Well, remember the definition of the normalized dot product:
+
+$$ \cos \theta = \frac{\sum x_{i} \times y_{i}}{\sqrt{\sum x_{i}^2}\sqrt{\sum y_{i}^2}} $$
+and the fact that the component-wise product of two vectors and their dot product are connected by:
+
+$$ x \bullet y = |x||y| \cos \theta = \sum x_{i} \times y_{i}$$
+...TODO : Show that `x' %*% y' is equal to `normDotProd(x, y)` or:
+
+$$ x' \bullet y' = \frac{\sum x_{i} \times y_{i}}{|x||y|}$$ 
+
+The difference with respect to writing code is that `x %*% y` will return a 1x1 `Matrix` object, while `normDotProd` returns a `numeric` vector.
