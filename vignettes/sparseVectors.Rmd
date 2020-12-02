@@ -1,13 +1,47 @@
 ---
 title: "Using sparseVectors"
-author: "Tobias Kockmann"
-date: "11/28/2020"
+author: "Tobias Kockmann^1^"
+date: "`r Sys.time()`"
 output: pdf_document
+bibliography: sparseVectors.bib
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+^1^Functional Genomics Center Zurich, ETH Zurich / University of Zurich,
+Winterthurerstrasse 190, 8057 Zurich, Switzerland
+
+## Introduction
+
+There is many ways to calculate spectrum similarity. For an overview see [@Yilmaz2017]. One of the most frequently used approaches is to 1st transform the spectra of interest to vectors and 2nd to compare these vectors by a dot (scalar) product. In order to support spectrum comparison using vector arithmetic we decide to implement a basic function named `as_sparseVector` that converts a rawRspectrum object into a vector representation. As the name indicates, we chose to use sparse vectors instead of ordinary dense vectors. The reason lies in the nature of centroided measurement data that is often very sparse and signal filtering further increases this sparsity.
+
+The conversion process starts by dividing the acquired spectrum into bins of a fixed sized size (see `mzBinSize` parameter) and each bin is assigned a certain weight based on an aggregation function (`fun`). This is typically the sum over all centroided intensity values in the bin, but one can also use the maximum or any other first order function (a function that returns a single numeric value). By default all intensities values that are below a user definable cutoff will be remove prior to the application of the aggregation function. This cutoff value is defined in units of S/N. The background idea is to have a noise filter that prevents aggregating noise. Let's see how his works in practice using the package sample data:
+
+```{r}
+S <- rawR::readSpectrum(rawfile = rawR:::sampleData(), 1:10)
+plot(S[[1]])
+sV <- as_sparseVector(S[[1]])
+class(sV)
+summary(sV)
+show(sV)
+plot(sV, type = "h", frame.plot = FALSE)
+```
+We can see that the default behavior of `as_sparseVector` is to apply a S/N filter with a cutoff of 3 units and that the default bin size is set to 1 m/z unit. Within each bin signals are aggregated by summation. This default behavior can be adapted. For instance by applying a more aggressive peak filtering and by using `max` instead of `sum`. Let's see what happens:
+
+```{r}
+sV <- as_sparseVector(S[[1]], fun = "max", StoNcutoff = 500)
+plot(sV, type = "h", frame.plot = FALSE)
+```
+We can also zoom into a specific bin range by subsetting the sparse vector: 
+
+```{r}
+plot(sV[100:200], type = "h", frame.plot = FALSE)
+```
+Many of the bins actually have zero weight due to the aggressive filtering.
+
+
 
 ## Reference spectrun
 
@@ -57,7 +91,7 @@ The `normDotProd` function computes the normalized dot product from two sparse s
 Vector normalization is done by dividing each vector component $x_{i}$ by the vector length $\|x\|$ (not to be confused with `length(x)`):
 
 $$\hat{x} = \frac{x_{i}}{\|x\|}  =\frac{x_{i}}{\sqrt{\sum x_{i}^2}}$$
-Once the vectors x and y have been normalized, one can use the matrix product `x %*% y` to compute a normalized dot product:
+Once the vectors `x` and `y` have been normalized, one can use the matrix product `x %*% y` to compute a normalized dot product:
 
 ```{r}
 plot(ref, type = "h", frame.plot = FALSE, main = "reference vector")
