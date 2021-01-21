@@ -81,12 +81,12 @@ H <- rawrr::readFileHeader(rawfile = rawfile)
 
 The Orbitrap detector has been a tremendous success story in MS, since it offers HRAM data on a time scale that is compatible with chromatographic analysis (LC-MS)[@Makarov2000] and is therefore heavily used in bottom-up proteomics. However, analyzing Orbitrap data in `R` has so far only been possible after raw data conversion to exchange formats like mz(X)ML. Unfortunately, conversion is accompanied by a loss of Orbitrap-specific information. This use case shows how easy it is to work directly with raw-formated Orbitrap data after installing our `R` package `rawrr` which applies vendor APIs for data access. We use a complete LC-MS run recorded on a `r H$"Instrument model"` by parallel reaction monitoring (PRM)[@Gallien2012] for demonstration purposes (File name: `r H$"RAW file"`). The `r H$"Time range"[2]` min run resulted in `r format(H$"Number of scans")` scans that were written to the file. Already typesetting the above lines uses `rawrr` functionality, since instrument model, file name, time range of data acquisition, and number of scans is extracted from the binary file header (Note: This manuscript was written in `R markdown` and combines `R` code with narration). The respective function is called `readFileHeader()` and returns a simple `R` object of type `list` (see Table 1).
 
-|Function Name       |Description                                         |Return value             |
-|:-------------------|----------------------------------------------------|:------------------------|
-|`readFileHeader()`  |Reads meta information from a raw file header       |`list`                   |
-|`readIndex()`       |Generates a scan index from a raw file              |`data.frame`             |
-|`readSpectrum()`    |Reads spectral data from a raw file                 |`rawrrSpectrum(Set)`     |
-|`readChromatogram()`|Reads chromatographic data from a raw file          |`rawrrChromatogram(Set)` |
+|Function Name       |Description                                  |Return value             |
+|:-------------------|---------------------------------------------|:------------------------|
+|`readFileHeader()`  |Reads meta information from a raw file header|`list`                   |
+|`readIndex()`       |Generates a scan index from a raw file       |`data.frame`             |
+|`readSpectrum()`    |Reads spectral data from a raw file          |`rawrrSpectrum(Set)`     |
+|`readChromatogram()`|Reads chromatographic data from a raw file   |`rawrrChromatogram(Set)` |
 
 Table: lists `rawrr` package functions connected to reading functionality. More details can be found in the package documentation (see supporting information, S-20 onwards).
 
@@ -94,8 +94,10 @@ Individual scans or scan collections (sets) can be read by the function `readSpe
 
 ```{r plotrawrrspectrum, fig.cap="Plot of scan number 9594 (USI: mzspec:MSV000086542:20181113_010_autoQC01:scan:9594) showing a centroided tandem mass spectrum of the iRT peptide precursor LGGNEQVTR++ in positive mode. The scan was acquired on an Orbitrap detector including lock mass correction and using a transient of 64 ms (equal to a resolving power of 30'000 at 200 m/z) and an AGC target of 1e5 elementary charges. Peak attributes like m/z, charge (z), and resolution (R) are shown above the peaks.", error=TRUE}
 library(rawrr)
-rawfile <- file.path(Sys.getenv('HOME'), "Downloads", "20181113_010_autoQC01.raw")
-i <- c(9594, 11113, 11884, 12788, 12677, 13204, 13868, 14551, 16136, 17193, 17612)
+rawfile <- file.path(Sys.getenv('HOME'),
+  "Downloads", "20181113_010_autoQC01.raw")
+i <- c(9594, 11113, 11884, 12788, 12677, 13204, 13868, 14551, 16136, 17193,
+  17612)
 S <- rawrr::readSpectrum(rawfile = rawfile, scan = i)
 class(S)
 class(S[[1]])
@@ -143,7 +145,8 @@ class(y)
 S[[1]]$`FAIMS Voltage On:`
 try(rawrr::faimsVoltageOn(S[[1]]))
 # generating a well-behaved accessor
-maxIonTime <- rawrr::makeAccessor(key = "Max. Ion Time (ms):", returnType = "double")
+maxIonTime <- rawrr::makeAccessor(key = "Max. Ion Time (ms):",
+    returnType = "double")
 maxIonTime(S[[1]])
 ```
 
@@ -164,15 +167,17 @@ plot(rawrr::readChromatogram(rawfile = rawfile, type = "bpc"))
 The initial step of iRT regression is to estimate the empirical RTs of a peptide set with known iRT scores. In the simplest case, this is achieved by computing an extracted ion chromatogram (XIC) for iRT peptide precursors, provided they were spiked into the sample matrix prior to data acquisition. The code chunk below demonstrates how the function `readChromatogram()` is called on the `R` command line to return a `rawrrChromatogramSet` object of the type `xic`. This object is plotted for visual inspection (see Figure 4 for resulting plot).
 
 ```{r plotrawrrchromatogram, fig.cap="Extracted ion chromatograms (XIC) for iRT peptide precursors. Each XIC was calculated using a tolerance of 10 ppm around the target mass and using only MS1-level scans.", error=TRUE}
-iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
-            683.8541, 699.3388, 726.8361, 776.9301)
+################################################################################
+iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384,
+    683.8282, 683.8541, 699.3388, 726.8361, 776.9301)
 
 names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
                  "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
                  "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
                  "LFLQFGAQGSPFLK")
 
-C <- rawrr::readChromatogram(rawfile, mass = iRTmz, tol = 10, type = "xic", filter = "ms")
+C <- rawrr::readChromatogram(rawfile, mass = iRTmz, tol = 10, type = "xic",
+    filter = "ms")
 class(C)
 plot(C, diagnostic = TRUE)
 ```
@@ -181,9 +186,9 @@ Be reminded that the intensity traces are not computed within `R`, for instance,
 
 ```{r fragmentIonTraces, fig.cap="Extracted ion chromatograms (XICs) for LGGNEQVTR++ fragment ions y6, y7, and y8. Each target ion (see legend) was extracted with a tolerance of 10 ppm from all scans matching the provided filter.", fig.retina=1}
 fC <- rawrr::readChromatogram(rawfile = rawfile,
-      mass = yIonSeries[c("y6", "y7", "y8")],
-      type = 'xic', tol = 10,
-      filter = "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
+    mass = yIonSeries[c("y6", "y7", "y8")],
+    type = 'xic', tol = 10,
+    filter = "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
 plot(fC, diagnostic = TRUE)
 ```
 
@@ -192,13 +197,15 @@ By using the `readIndex()` function a `data.frame` that indexes all scans found 
 ```{r readIndex}
 Idx <- rawrr::readIndex(rawfile = rawfile)
 head(subset(Idx,
-  scanType == "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]"))
+  scanType == "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
+)
 ```
 
 The delta between consecutive scans is always 22 scans (one PRM cycle) and the `depedencyType` of the MS2 scans is `NA` (since it was triggered by an inclusion list). For regression, we now extract the RTs at the maximum of the intensity traces stored in the `rawrrChromatogram` object and fit a linear model of the form $rt = a + b \cdot score$. In theory, we could do this at the precursor or fragment ion level. For simplicity, we show only the first option.  
 
 ```{r iRTscoreFit, error=TRUE}
-iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
+iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26,
+    54.62, 100)
 rt <- sapply(C, function(x) x$times[which.max(x$intensities)[1]])
 fit <- lm(rt ~ iRTscore)
 ```
@@ -215,9 +222,9 @@ plot(rt ~ iRTscore,
 abline(fit, col = 'grey')
 abline(v = 0, col = "grey", lty = 2)
 legend("topleft", legend = paste("Regression line: ", "rt =",
-                                 format(coef(fit)[1], digits = 4), " + ",
-                                 format(coef(fit)[2], digits = 2), "score",
-                                 "\nR2: ", format(summary(fit)$r.squared, digits = 2)),
+    format(coef(fit)[1], digits = 4), " + ",
+    format(coef(fit)[2], digits = 2), "score",
+    "\nR2: ", format(summary(fit)$r.squared, digits = 2)),
        bty = "n", cex = 0.75)
 text(iRTscore, rt, iRTmz, pos=1,cex=0.5)
 ```
@@ -272,5 +279,5 @@ on different Orbitrap instruments.
 # Table of contents graphic
 
 ```{r, echo=FALSE}
-  knitr::include_graphics("rawrr_logo.png")
+knitr::include_graphics("rawrr_logo.png")
 ```
