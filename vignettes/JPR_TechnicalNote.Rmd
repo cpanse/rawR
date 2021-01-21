@@ -1,44 +1,27 @@
 ---
-title: "The rawrr R package – Direct Access to Orbitrap Data and Beyond"
-author: "Tobias Kockmann^1‡\\*^ & Christian Panse^1,2‡^"
-date: "`r Sys.time()`"
-output:
-  pdf_document: 
-    keep_tex: yes
-    latex_engine: xelatex
-  citation_package: natbib
-bibliography: rawrr.bib
-csl: american-chemical-society.csl
-vignette: |
-  %\usepackage[utf8]{inputenc}
-  %\VignetteEncoding{UTF-8}
-  %\VignetteIndexEntry{rawrr - Technical Note}
-  %\VignetteEngine{knitr::rmarkdown}
-urlcolor: blue
-header-includes:
-  - \usepackage{setspace}\doublespacing
+journal: jacsat
+type: article
+author:
+  - name: Tobias Kockmann
+    email: \email{tobias.kockmann@fgcz.ethz.ch}
+    aff: Functional Genomics Center Zurich, ETH Zurich / University of Zurich, Winterthurerstrasse 190, 8057 Zurich, Switzerland
+  - name: Christian Panse
+    aff: Functional Genomics Center Zurich, ETH Zurich / University of Zurich, Winterthurerstrasse 190, 8057 Zurich, Switzerland
+    alsoaff: Swiss Institute of Bioinformatics, Quartier Sorge - Batiment Amphipole, 1015 Lausanne, Switzerland
+title:
+  formatted: The rawrr R package – Direct Access to Orbitrap Data and Beyond
 keywords: computational mass spectrometry, software, R package
 abstract: |
-  The Bioconductor project[@Huber2015] has shown that the `R` statistical environment is a highly valuable tool for genomics data analysis, but with respect to proteomics, we are still missing low-level infrastructure to enable performant and robust analysis workflows in `R`. Fundamentally important are libraries that provide raw data access. Our `R` package `rawDiag`[@Trachsel2018] has provided the proof-of-principle how access to mass spectrometry raw files can be realized by wrapping a vendor-provided advanced programming interface (API) for the purpose of metadata analysis and visualization. Our novel package `rawrr` now provides complete, OS-independent access to all spectral data logged in Thermo Fisher Scientific raw files. In this technical note, we present implementation details and describe the main functionalities provided by the `rawrr` package. In addition, we report two use cases inspired by real-world research tasks that demonstrate the application of the package. The raw data used for demonstration purposes was deposited as MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403). **Availability**: <https://github.com/fgcz/rawrr> **Keywords**: computational mass spectrometry, software, R package
+  The Bioconductor project[@Huber2015] has shown that the `R` statistical environment is a highly valuable tool for genomics data analysis, but with respect to proteomics, we are still missing low-level infrastructure to enable performant and robust analysis workflows in `R`. Fundamentally important are libraries that provide raw data access. Our `R` package `rawDiag`[@Trachsel2018] has provided the proof-of-principle how access to mass spectrometry raw files can be realized by wrapping a vendor-provided advanced programming interface (API) for the purpose of metadata analysis and visualization. Our novel package `rawrr` now provides complete, OS-independent access to all spectral data logged in Thermo Fisher Scientific raw files. In this technical note, we present implementation details and describe the main functionalities provided by the `rawrr` package. In addition, we report two use cases inspired by real-world research tasks that demonstrate the application of the package. The raw data used for demonstration purposes was deposited as MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403). **Availability**: <https://github.com/fgcz/rawrr>
+bibliography: rawrr.bib
+csl: american-chemical-society.csl
+output: rticles::acs_article
 ---
 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-1 Functional Genomics Center Zurich, ETH Zurich / University of Zurich,
-Winterthurerstrasse 190, 8057 Zurich, Switzerland
-
-2 Swiss Institute of Bioinformatics, Quartier Sorge - Batiment Amphipole,
-1015 Lausanne, Switzerland
-
-\* Corresponding author
-
-‡ Equal contributing author
-
-
-
 
 <!--
 Deposition of Mass spectrometry data
@@ -285,12 +268,6 @@ on different Orbitrap instruments.
 \newpage
 # Table of contents graphic
 
-<<<<<<< HEAD
 ```{r, echo=FALSE}
   knitr::include_graphics("rawrr_logo.png")
 ```
-||||||| 080956f
-![For TOC only](..\rawrr_logo.png)
-=======
-![](..\rawrr_logo.png)
->>>>>>> 8d4274dd9a88480e5e2b45c4339c268f3520ecd8
