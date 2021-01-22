@@ -15,7 +15,9 @@ abstract: |
   The Bioconductor project[@Huber2015] has shown that the `R` statistical environment is a highly valuable tool for genomics data analysis, but with respect to proteomics, we are still missing low-level infrastructure to enable performant and robust analysis workflows in `R`. Fundamentally important are libraries that provide raw data access. Our `R` package `rawDiag`[@Trachsel2018] has provided the proof-of-principle how access to mass spectrometry raw files can be realized by wrapping a vendor-provided advanced programming interface (API) for the purpose of metadata analysis and visualization. Our novel package `rawrr` now provides complete, OS-independent access to all spectral data logged in Thermo Fisher Scientific raw files. In this technical note, we present implementation details and describe the main functionalities provided by the `rawrr` package. In addition, we report two use cases inspired by real-world research tasks that demonstrate the application of the package. The raw data used for demonstration purposes was deposited as MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403). **Availability**: <https://github.com/fgcz/rawrr>
 bibliography: rawrr.bib
 csl: american-chemical-society.csl
-output: rticles::acs_article
+output:
+   rticles::acs_article:
+      latex_engine: xelatex
 header-includes:
    - \usepackage[utf8]{inputenc}
    - \usepackage{longtable,booktabs}
@@ -241,7 +243,7 @@ Our R package `rawrr` provides direct access to spectral data stored in Thermo F
 
 # Author contributions
 
-The manuscript was written through contributions of all authors. All authors have given approval to the final version of the manuscript. ‡These authors contributed equally.
+The manuscript was written through contributions of all authors. All authors have given approval to the final version of the manuscript.
 
 # Acknowledgements
 
@@ -266,6 +268,8 @@ USI, Universal spectrum identifier
 XIC, extracted ion chromatogram;
 
 # Supporting Information
+
+The following supporting information is available free of charge at ACS website http://pubs.acs.org
 
 * R script demonstrating package functionalities using a set of LC-MS files recorded
 on different Orbitrap instruments.
