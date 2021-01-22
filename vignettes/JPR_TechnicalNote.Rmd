@@ -83,12 +83,12 @@ H <- rawrr::readFileHeader(rawfile = rawfile)
 
 The Orbitrap detector has been a tremendous success story in MS, since it offers HRAM data on a time scale that is compatible with chromatographic analysis (LC-MS)[@Makarov2000] and is therefore heavily used in bottom-up proteomics. However, analyzing Orbitrap data in `R` has so far only been possible after raw data conversion to exchange formats like mz(X)ML. Unfortunately, conversion is accompanied by a loss of Orbitrap-specific information. This use case shows how easy it is to work directly with raw-formated Orbitrap data after installing our `R` package `rawrr` which applies vendor APIs for data access. We use a complete LC-MS run recorded on a `r H$"Instrument model"` by parallel reaction monitoring (PRM)[@Gallien2012] for demonstration purposes (File name: `r H$"RAW file"`). The `r H$"Time range"[2]` min run resulted in `r format(H$"Number of scans")` scans that were written to the file. Already typesetting the above lines uses `rawrr` functionality, since instrument model, file name, time range of data acquisition, and number of scans is extracted from the binary file header (Note: This manuscript was written in `R markdown` and combines `R` code with narration). The respective function is called `readFileHeader()` and returns a simple `R` object of type `list` (see Table 1).
 
-|Function Name       |Description                                  |Return value             |
-|:-------------------|---------------------------------------------|:------------------------|
-|`readFileHeader()`  |Reads meta information from a raw file header|`list`                   |
-|`readIndex()`       |Generates a scan index from a raw file       |`data.frame`             |
-|`readSpectrum()`    |Reads spectral data from a raw file          |`rawrrSpectrum(Set)`     |
-|`readChromatogram()`|Reads chromatographic data from a raw file   |`rawrrChromatogram(Set)` |
+|Function Name           |Description                                  |Return value                 |
+|:-----------------------|---------------------------------------------|:----------------------------|
+|`readFileHeader()`      |Reads meta information from a raw file header|`list`                       |
+|`readIndex()`           |Generates a scan index from a raw file       |`data.frame`                 |
+|`readSpectrum()`        |Reads spectral data from a raw file          |`rawrrSpectrum(Set)`         |
+|`readChromatogram()`    |Reads chromatographic data from a raw file   |`rawrrChromatogram(Set)`     |
 
 Table: lists `rawrr` package functions connected to reading functionality. More details can be found in the package documentation (see supporting information, S-20 onwards).
 
