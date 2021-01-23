@@ -86,7 +86,7 @@ jobs:
         shell: Rscript {0}
 
       - name: install rawrr
-        run: install.packages(".", repo=NULL)
+        run: install.packages('rticles'); install.packages('.', repo=NULL)
         shell: Rscript {0}
 
       - name: Render autoQC01 vignette
