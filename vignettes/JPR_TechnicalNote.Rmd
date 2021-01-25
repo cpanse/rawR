@@ -269,12 +269,15 @@ XIC, extracted ion chromatogram;
 
 # Supporting Information
 
-The following supporting information is available free of charge at ACS website http://pubs.acs.org
+The following supporting information is available free of charge at the ACS website http://pubs.acs.org
 
-* R script demonstrating package functionalities using a set of LC-MS files recorded
-on different Orbitrap instruments.
-* Code chunk for analyzing the relation of dependent scans
-* Package documentation
+* Supp. Table 1 - Raw files available through MSV0000086542
+* Supp. Table 2 - Overview of the reader functions in the `rawrr` package
+* Supp. Table 3 - Instrument information extracted using `readFileHeader()`
+* Supp. Table 4 - Highest-scoring MS2 scans for LGGNEQVTR++ across files listed in Supp. Table 1
+* Supp. Figure 1 to 21 - Plots for highest-scoring scans listed in Supp. Table 4
+* Supp. Figure 22 to 44 - iRT regression across files listed in Supp. Table 1
+* Documentation for `rawrr` package, version 0.2.0
 
 # References
 <div id="refs"></div>
