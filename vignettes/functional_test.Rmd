@@ -261,16 +261,16 @@ end_time - start_time
 Visualize the chromatograms and apply a linear regression of the extracted APEX values.
 
 ```{r definePlotChromatogramAndFit, echo=FALSE}
-.plotChromatogramAndFit <- function(x, i){
+.plotChromatogramAndFit <- function(x, i, ...){
     par(mfrow=c(2,1))
     
-    plot(x); legend("topright", legend=i, title='Instrument Model', bty = "n", cex=0.75)
+    plot(x, ...); legend("topright", legend=i, title='Instrument Model', bty = "n", cex=0.75)
     
     rt <- sapply(x, function(x) x$times[which.max(x$intensities)[1]])
     if (length(rt) == length(iRT.score)){
     fit <- lm(rt ~ iRT.score)
     plot(rt ~ iRT.score, ylab = 'Retention time [min]',
-         xlab = "iRT score", pch=16, frame.plot = FALSE)
+         xlab = "iRT score", pch=16, frame.plot = FALSE, ...)
     abline(fit, col = 'grey')
     abline(v = 0, col = "grey", lty = 2)
     legend("topleft",
@@ -286,7 +286,7 @@ Visualize the chromatograms and apply a linear regression of the extracted APEX 
 
 ```{r plotChromatogramAndFit, fig.retina=3,fig.height=9,  fig.show="hold", out.width="50%"}
 rv <- mapply(FUN=.plotChromatogramAndFit,
-             x=C, i=instrumentInformation$model)
+             x=C, i=instrumentInformation$model, main=basename(input))
 ```
 
 \newpage

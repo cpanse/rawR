@@ -1086,7 +1086,7 @@ plot.rawrrChromatogram <- function(x, legend = TRUE, ...){
          xlab = "Retention Time [min]",
          ylab = "Intensity",
          type = "l",
-         frame.plot = FALSE)
+         frame.plot = FALSE, ...)
 
 
     if (legend) {
