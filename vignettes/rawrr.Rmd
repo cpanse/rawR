@@ -66,7 +66,8 @@ rawfile <- file.path(Sys.getenv('HOME'), "Downloads", "20181113_010_autoQC01.raw
 ```
 
 
-```{r tartareEH4547, warning=FALSE, message=FALSE}
+```{r tartareEH4547, warning=FALSE, message=FALSE, eval=FALSE}
+# code snippet for using ExperimentHub
 library(ExperimentHub)
 eh <- ExperimentHub::ExperimentHub()
 EH4547 <- normalizePath(eh[["EH4547"]])
