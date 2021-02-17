@@ -24,7 +24,7 @@ You need to have [Mono](https://www.mono-project.com) installed. Mono is an open
 
 ## Manuscripts
 
-https://www.biorxiv.org/content/10.1101/2020.10.30.362533v1
+https://www.biorxiv.org/content/10.1101/2020.10.30.362533v1 - [R markdown file (30KBytes 277lines)](https://github.com/fgcz/rawrr/blob/master/vignettes/rawrr.Rmd)
 
 ## Blog posts
 
