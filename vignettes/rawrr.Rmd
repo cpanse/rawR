@@ -1,26 +1,25 @@
 ---
-journal: jacsat
-type: article
-author:
-  - name: Tobias Kockmann
-    email: \email{tobias.kockmann@fgcz.ethz.ch}
-    aff: Functional Genomics Center Zurich, ETH Zurich / University of Zurich, Winterthurerstrasse 190, 8057 Zurich, Switzerland
-  - name: Christian Panse
-    aff: Functional Genomics Center Zurich, ETH Zurich / University of Zurich, Winterthurerstrasse 190, 8057 Zurich, Switzerland
-    alsoaff: Swiss Institute of Bioinformatics, Quartier Sorge - Batiment Amphipole, 1015 Lausanne, Switzerland
-title:
-  formatted: The rawrr R package -- Direct Access to Orbitrap Data and Beyond
-keywords: computational mass spectrometry, software, R package
-abstract: |
-  The Bioconductor project[@Huber2015] has shown that the `R` statistical environment is a highly valuable tool for genomics data analysis, but with respect to proteomics, we are still missing low-level infrastructure to enable performant and robust analysis workflows in `R`. Fundamentally important are libraries that provide raw data access. Our `R` package `rawDiag`[@Trachsel2018] has provided the proof-of-principle how access to mass spectrometry raw files can be realized by wrapping a vendor-provided advanced programming interface (API) for the purpose of metadata analysis and visualization. Our novel package `rawrr` now provides complete, OS-independent access to all spectral data logged in Thermo Fisher Scientific raw files. In this technical note, we present implementation details and describe the main functionalities provided by the `rawrr` package. In addition, we report two use cases inspired by real-world research tasks that demonstrate the application of the package. The raw data used for demonstration purposes was deposited as MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403). **Availability**: <https://github.com/fgcz/rawrr>
+title: "The rawrr R package – Direct Access to Orbitrap Data and Beyond"
+author: "Tobias Kockmann^1‡\\*^ & Christian Panse^1,2‡^"
+date: "`r Sys.time()`"
+output:
+  pdf_document: 
+    keep_tex: yes
+    latex_engine: xelatex
+  citation_package: natbib
 bibliography: rawrr.bib
 csl: american-chemical-society.csl
-output:
-   rticles::acs_article:
-      latex_engine: xelatex
+vignette: >
+  %\usepackage[utf8]{inputenc}
+  %\VignetteIndexEntry{rawrr: primer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+urlcolor: blue
 header-includes:
-   - \usepackage[utf8]{inputenc}
-   - \usepackage{longtable,booktabs}
+  - \usepackage{setspace}\doublespacing
+keywords: computational mass spectrometry, software, R package
+abstract: |
+  The Bioconductor project[@Huber2015] has shown that the `R` statistical environment is a highly valuable tool for genomics data analysis, but with respect to proteomics, we are still missing low-level infrastructure to enable performant and robust analysis workflows in `R`. Fundamentally important are libraries that provide raw data access. Our `R` package `rawDiag`[@Trachsel2018] has provided the proof-of-principle how access to mass spectrometry raw files can be realized by wrapping a vendor-provided advanced programming interface (API) for the purpose of metadata analysis and visualization. Our novel package `rawrr` now provides complete, OS-independent access to all spectral data logged in Thermo Fisher Scientific raw files. In this technical note, we present implementation details and describe the main functionalities provided by the `rawrr` package. In addition, we report two use cases inspired by real-world research tasks that demonstrate the application of the package. The raw data used for demonstration purposes was deposited as MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403). **Availability**: <https://github.com/fgcz/rawrr> **Keywords**: computational mass spectrometry, software, R package
 ---
 
 
@@ -28,13 +27,15 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-<!--
-Deposition of Mass spectrometry data
+1 Functional Genomics Center Zurich, ETH Zurich / University of Zurich,
+Winterthurerstrasse 190, 8057 Zurich, Switzerland
 
-For papers which were initially submitted without depositing MS data into a PUBLIC repository (such as ProteomeXchange, Massive, or Chorus),  deposit the data PRIOR to submitting a revision, and include dataset identifier(s) in the Abstract of the revised paper to show compliance.  This is a critical point for publication transparency since it allows readers to reproduce results claimed in the manuscript.
-NOTE:   MS data provided on author-managed links is NOT acceptable.
--->
+2 Swiss Institute of Bioinformatics, Quartier Sorge - Batiment Amphipole,
+1015 Lausanne, Switzerland
 
+\* Corresponding author
+
+‡ Equal contributing author
 
 # Introduction
 
@@ -48,26 +49,10 @@ Our implementation consists of two language layers, the top `R` layer and the hi
 
 Since mass spectrometry typically uses two basic data items, the mass spectrum and the mass chromatogram, we decided to implement corresponding objects following `R`'s `S3` OOP system [@newS] named `rawrrSpectrum` and `rawrrChromatogram`. These objects function as simplistic interface to almost all data stored in raw-formatted files. The package provides functions to create and validate class instances. While class constructors primarily exist for (unit) testing purposes, instances are typically generated by the reader family of functions enumerated in Table 1 and returned as object sets (`rawrrSpectrumSet`, `rawrrChromatogramSet`). The names of objects encapsulated within `rawrrSpectrum` instances are keys returned by the `RawFileReader` API and the corresponding values become data parts of the objects, typically vectors of type `numeric`, `logical` or `character`. It needs to be mentioned that the `rawrrSpectrum` content partially depends on the instrument model and installed instrument control software version. For instance, the keys `FAIMS Voltage On:` and `FAIMS CV:` are  only written by instruments that support FAIMS acquisition. We also implemented basic generics for printing and plotting of objects in base `R` to minimize dependencies.
 
-<!--
-Comment: Maybe to basic for JPR, since MS community is familiar with the definition of spectra and chromatogram.
-
-Move text bricks below to documentation
-
-#### Spectra
-All mass spectra are recorded by scanning detectors (mass analyzers) that log signal intensities for ranges of mass to charge ratios (m/z), also referred to as position. These recordings can be of continuous nature, so-called profile data (p), or appear centroided (c) in case discrete information (tuples of position and intensity values) are sufficient. This heavily compacted data structure is often called a peak list. In addition to signal intensities, a peak list can also cover additional peak attributes like peak resolution (R), charge (z), or local noise estimates. In short, the additional attributes further described the nature of the original profile signal or help to group peak lists with respect to their molecular nature or processing history. A well-known example is the assignment of peaks to peak groups that constitute isotope patterns (M, M+1, M+2, ...). 
-
-#### Chromatograms
-Chromatograms come in different flavors but are always signal intensity values as a function of time. Signal intensities can be point estimates from scanning detectors or plain intensities from non-scanning detectors, e.g., UV trace. Scanning detector (mass analyzers) point estimates can be defined in different ways by, for instance, summing all signals of a given spectrum (total ion chromatogram or TIC), or by extracting signal around an expected value (extracted ion chromatogram = XIC), or by using the maximum signal contained in a spectrum (base peak chromatogram = BPC). On top, chromatograms can be computed from pre-filtered lists of scans. A total ion chromatogram (TIC), for instance, is typically generated by iterating over all MS1-level scans.
--->
 
 ### Example data
 The example file `20181113_010_autoQC01.raw` used throughout this manuscript contains Fourier-transformed Orbitrap spectra (FTMS) recorded on a Thermo Fisher Scientific Q Exactive HF in positive mode (+). The mass spectrometer was operated in line with a nano UPLC and a nano electrospray source (NSI). MS2 spectra were generated by HCD fragmentation at normalized collision energy (NCE) of 27. All spectra were written to file after applying centroiding (c) and lock mass correction. The analyzed sample consisted of the iRT peptide mix (Biognosys) in a tryptic BSA digest (NEB) and was separated applying a 20 min linear gradient on C18 reversed-phase material at a constant flow rate of 300 nl/min. The file is part of the MassIVE dataset [MSV000086542](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?accession=MSV000086542) [@MSV000086542] and can be obtained through the [FTP download link](ftp://massive.ucsd.edu/MSV000086542/raw/20181113_010_autoQC01.raw)
 (MD5: a1f5df9627cf9e0d51ec1906776957ab). Individual scans have been assigned a universal spectrum identifier (USI)[@Deutsch2020.12.07.415539] by [MassIVE](https://massive.ucsd.edu/ProteoSAFe/static/massive.jsp). Additional raw data for demonstration and extended testing is available through the Bioconductor data package [tartare](https://bioconductor.org/packages/tartare/) [@tartare].
-
-<!---
-TODO(cp): add to man page
-The file sample.raw contains 574 Fourier-transformed Orbitrap spectra (FTMS) recorded on a Thermo Fisher Scientific Q Exactive HF-X. The mass spectrometer was operated in line with a nano electrospray source (NSI) in positive mode (+). All spectra were written to disk after applying centroiding (c) and lock mass correction. Additional raw data for demonstration and extended testing is available through the [tartare package](https://bioconductor.org/packages/tartare/) [@tartare]. Lions love raw meat!
--->
 
 # Results
 
@@ -75,31 +60,42 @@ The following sections are inspired by real-world research/infrastructure projec
 
 ## Use Case I - Analyzing Orbitrap Spectra
 
-```{r readFileHeader, echo=FALSE, message=FALSE}
-library(rawrr)
+```{r readFileHeader, echo=FALSE, message=FALSE, exec=FALSE}
+# Download via FTP
 rawfile <- file.path(Sys.getenv('HOME'), "Downloads", "20181113_010_autoQC01.raw")
+```
+
+
+```{r tartareEH4547, warning=FALSE, message=FALSE}
+library(ExperimentHub)
+eh <- ExperimentHub::ExperimentHub()
+EH4547 <- normalizePath(eh[["EH4547"]])
+
+(rawfile <- paste0(EH4547, ".raw"))
+if (!file.exists(rawfile)){ file.link(EH4547, rawfile) }
+```
+
+
+```{r}
+library(rawrr)
 H <- rawrr::readFileHeader(rawfile = rawfile)
 ```
 
 The Orbitrap detector has been a tremendous success story in MS, since it offers HRAM data on a time scale that is compatible with chromatographic analysis (LC-MS)[@Makarov2000] and is therefore heavily used in bottom-up proteomics. However, analyzing Orbitrap data in `R` has so far only been possible after raw data conversion to exchange formats like mz(X)ML. Unfortunately, conversion is accompanied by a loss of Orbitrap-specific information. This use case shows how easy it is to work directly with raw-formated Orbitrap data after installing our `R` package `rawrr` which applies vendor APIs for data access. We use a complete LC-MS run recorded on a `r H$"Instrument model"` by parallel reaction monitoring (PRM)[@Gallien2012] for demonstration purposes (File name: `r H$"RAW file"`). The `r H$"Time range"[2]` min run resulted in `r format(H$"Number of scans")` scans that were written to the file. Already typesetting the above lines uses `rawrr` functionality, since instrument model, file name, time range of data acquisition, and number of scans is extracted from the binary file header (Note: This manuscript was written in `R markdown` and combines `R` code with narration). The respective function is called `readFileHeader()` and returns a simple `R` object of type `list` (see Table 1).
 
-|Function Name           |Description                                  |Return value                 |
-|:-----------------------|---------------------------------------------|:----------------------------|
-|`readFileHeader()`      |Reads meta information from a raw file header|`list`                       |
-|`readIndex()`           |Generates a scan index from a raw file       |`data.frame`                 |
-|`readSpectrum()`        |Reads spectral data from a raw file          |`rawrrSpectrum(Set)`         |
-|`readChromatogram()`    |Reads chromatographic data from a raw file   |`rawrrChromatogram(Set)`     |
+|Function Name       |Description                                         |Return value             |
+|:-------------------|----------------------------------------------------|:------------------------|
+|`readFileHeader()`  |Reads meta information from a raw file header       |`list`                   |
+|`readIndex()`       |Generates a scan index from a raw file              |`data.frame`             |
+|`readSpectrum()`    |Reads spectral data from a raw file                 |`rawrrSpectrum(Set)`     |
+|`readChromatogram()`|Reads chromatographic data from a raw file          |`rawrrChromatogram(Set)` |
 
-Table: lists `rawrr` package functions connected to reading functionality. More details can be found in the package documentation (see supporting information, S-20 onward).
+Table: lists `rawrr` package functions connected to reading functionality. More details can be found in the package documentation (see supporting information, S-20 onwards).
 
 Individual scans or scan collections (sets) can be read by the function `readSpectrum()` which returns a `rawrrSpectrum` object or `rawrrSpectrumSet`. Our package also provides generics for printing and plotting these objects. The following code chunk depicts how a set of scans is read from the raw file (scan numbers were selected based on a database search). The corresponding Figure 1 shows the resulting plot for scan `9594` (USI: `mzspec:MSV000086542:20181113_010_autoQC01:scan:9594:LGGNEQVTR/2`) assigned to the doubly-charged iRT peptide LGGNEQVTR by MS-GF+ (Score: 144, SpecProb: 1.9e-12, DB E-Value: 4.4e-4, see [MassIVE RMSV000000336.1](https://massive.ucsd.edu/ProteoSAFe/dataset.jsp?task=575538e190e84cbfbf6c17aa1219e403#reanalyses_header) for details of the search):
 
 ```{r plotrawrrspectrum, fig.cap="Plot of scan number 9594 (USI: mzspec:MSV000086542:20181113_010_autoQC01:scan:9594) showing a centroided tandem mass spectrum of the iRT peptide precursor LGGNEQVTR++ in positive mode. The scan was acquired on an Orbitrap detector including lock mass correction and using a transient of 64 ms (equal to a resolving power of 30'000 at 200 m/z) and an AGC target of 1e5 elementary charges. Peak attributes like m/z, charge (z), and resolution (R) are shown above the peaks.", error=TRUE}
-library(rawrr)
-rawfile <- file.path(Sys.getenv('HOME'),
-  "Downloads", "20181113_010_autoQC01.raw")
-i <- c(9594, 11113, 11884, 12788, 12677, 13204, 13868, 14551, 16136, 17193,
-  17612)
+i <- c(9594, 11113, 11884, 12788, 12677, 13204, 13868, 14551, 16136, 17193, 17612)
 S <- rawrr::readSpectrum(rawfile = rawfile, scan = i)
 class(S)
 class(S[[1]])
@@ -147,8 +143,7 @@ class(y)
 S[[1]]$`FAIMS Voltage On:`
 try(rawrr::faimsVoltageOn(S[[1]]))
 # generating a well-behaved accessor
-maxIonTime <- rawrr::makeAccessor(key = "Max. Ion Time (ms):",
-    returnType = "double")
+maxIonTime <- rawrr::makeAccessor(key = "Max. Ion Time (ms):", returnType = "double")
 maxIonTime(S[[1]])
 ```
 
@@ -169,16 +164,15 @@ plot(rawrr::readChromatogram(rawfile = rawfile, type = "bpc"))
 The initial step of iRT regression is to estimate the empirical RTs of a peptide set with known iRT scores. In the simplest case, this is achieved by computing an extracted ion chromatogram (XIC) for iRT peptide precursors, provided they were spiked into the sample matrix prior to data acquisition. The code chunk below demonstrates how the function `readChromatogram()` is called on the `R` command line to return a `rawrrChromatogramSet` object of the type `xic`. This object is plotted for visual inspection (see Figure 4 for resulting plot).
 
 ```{r plotrawrrchromatogram, fig.cap="Extracted ion chromatograms (XIC) for iRT peptide precursors. Each XIC was calculated using a tolerance of 10 ppm around the target mass and using only MS1-level scans.", error=TRUE}
-iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384,
-    683.8282, 683.8541, 699.3388, 726.8361, 776.9301)
+iRTmz <- c(487.2571, 547.2984, 622.8539, 636.8695, 644.8230, 669.8384, 683.8282,
+            683.8541, 699.3388, 726.8361, 776.9301)
 
 names(iRTmz) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
                  "GAGSSEPVTGLDAK", "TPVISGGPYEYR", "VEATFGVDESNAK",
                  "TPVITGAPYEYR", "DGLDAASYYAPVR", "ADVTPADFSEWSK",
                  "LFLQFGAQGSPFLK")
 
-C <- rawrr::readChromatogram(rawfile, mass = iRTmz, tol = 10, type = "xic",
-    filter = "ms")
+C <- rawrr::readChromatogram(rawfile, mass = iRTmz, tol = 10, type = "xic", filter = "ms")
 class(C)
 plot(C, diagnostic = TRUE)
 ```
@@ -187,9 +181,9 @@ Be reminded that the intensity traces are not computed within `R`, for instance,
 
 ```{r fragmentIonTraces, fig.cap="Extracted ion chromatograms (XICs) for LGGNEQVTR++ fragment ions y6, y7, and y8. Each target ion (see legend) was extracted with a tolerance of 10 ppm from all scans matching the provided filter.", fig.retina=1}
 fC <- rawrr::readChromatogram(rawfile = rawfile,
-    mass = yIonSeries[c("y6", "y7", "y8")],
-    type = 'xic', tol = 10,
-    filter = "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
+      mass = yIonSeries[c("y6", "y7", "y8")],
+      type = 'xic', tol = 10,
+      filter = "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
 plot(fC, diagnostic = TRUE)
 ```
 
@@ -198,15 +192,13 @@ By using the `readIndex()` function a `data.frame` that indexes all scans found 
 ```{r readIndex}
 Idx <- rawrr::readIndex(rawfile = rawfile)
 head(subset(Idx,
-  scanType == "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]")
-)
+  scanType == "FTMS + c NSI Full ms2 487.2567@hcd27.00 [100.0000-1015.0000]"))
 ```
 
 The delta between consecutive scans is always 22 scans (one PRM cycle) and the `depedencyType` of the MS2 scans is `NA` (since it was triggered by an inclusion list). For regression, we now extract the RTs at the maximum of the intensity traces stored in the `rawrrChromatogram` object and fit a linear model of the form $rt = a + b \cdot score$. In theory, we could do this at the precursor or fragment ion level. For simplicity, we show only the first option.  
 
 ```{r iRTscoreFit, error=TRUE}
-iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26,
-    54.62, 100)
+iRTscore <- c(-24.92, 19.79, 70.52, 87.23, 0, 28.71, 12.39, 33.38, 42.26, 54.62, 100)
 rt <- sapply(C, function(x) x$times[which.max(x$intensities)[1]])
 fit <- lm(rt ~ iRTscore)
 ```
@@ -223,9 +215,9 @@ plot(rt ~ iRTscore,
 abline(fit, col = 'grey')
 abline(v = 0, col = "grey", lty = 2)
 legend("topleft", legend = paste("Regression line: ", "rt =",
-    format(coef(fit)[1], digits = 4), " + ",
-    format(coef(fit)[2], digits = 2), "score",
-    "\nR2: ", format(summary(fit)$r.squared, digits = 2)),
+                                 format(coef(fit)[1], digits = 4), " + ",
+                                 format(coef(fit)[2], digits = 2), "score",
+                                 "\nR2: ", format(summary(fit)$r.squared, digits = 2)),
        bty = "n", cex = 0.75)
 text(iRTscore, rt, iRTmz, pos=1,cex=0.5)
 ```
@@ -242,7 +234,7 @@ Our R package `rawrr` provides direct access to spectral data stored in Thermo F
 
 # Author contributions
 
-The manuscript was written through contributions of all authors. All authors have given approval to the final version of the manuscript.
+The manuscript was written through contributions of all authors. All authors have given approval to the final version of the manuscript. ‡These authors contributed equally.
 
 # Acknowledgements
 
@@ -268,15 +260,10 @@ XIC, extracted ion chromatogram;
 
 # Supporting Information
 
-The following supporting information is available free of charge at the ACS website http://pubs.acs.org
-
-* Supp. Table 1 - Raw files available through MSV0000086542
-* Supp. Table 2 - Overview of the reader functions in the `rawrr` package
-* Supp. Table 3 - Instrument information extracted using `readFileHeader()`
-* Supp. Table 4 - Highest-scoring MS2 scans for LGGNEQVTR++ across files listed in Supp. Table 1
-* Supp. Figure 1 to 21 - Plots for highest-scoring scans listed in Supp. Table 4
-* Supp. Figure 22 to 44 - iRT regression across files listed in Supp. Table 1
-* Documentation for `rawrr` package, version 0.2.0
+* R script demonstrating package functionalities using a set of LC-MS files recorded
+on different Orbitrap instruments.
+* Code chunk for analyzing the relation of dependent scans
+* Package documentation
 
 # References
 <div id="refs"></div>
@@ -285,5 +272,6 @@ The following supporting information is available free of charge at the ACS webs
 # Table of contents graphic
 
 ```{r, echo=FALSE}
-knitr::include_graphics("rawrr_logo.png")
+  knitr::include_graphics("rawrr_logo.png")
 ```
+
