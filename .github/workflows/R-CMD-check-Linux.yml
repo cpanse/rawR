@@ -72,11 +72,6 @@ jobs:
             path: ~/work/_temp/Library/
             key: ${{ runner.os }}-RpkgsV2
 
-      - name: Install BiocCheck
-        if: steps.cache-rpkgs-cran-bioc.outputs.cache-hit != 'true'
-        run: BiocManager::install(c('BiocCheck', 'tartare'))
-        shell: Rscript {0}
-
       - name: roxygen2::roxygenise
         run: install.packages('roxygen2'); roxygen2::roxygenise(clean=TRUE); unlink("inst/rawrrassembly/bin/rawrr.exe")
         shell: Rscript {0}
