@@ -15,7 +15,7 @@ Please install the latest release from https://github.com/fgcz/rawR/releases acc
 
 [R](https://cran.r-project.org/) (>= 4.0)
  
-### MS Windows
+### Microsoft Windows
 
 Make sure that .NET Framework 4.5.1 or higher is installed.
 
