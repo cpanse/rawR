@@ -84,13 +84,6 @@ jobs:
         run: install.packages('rticles'); install.packages('.', repo=NULL)
         shell: Rscript {0}
 
-      - name: Render autoQC01 vignette
-        run: |
-             cp /home/runner/work/rawrr/rawrr/check/rawrr.Rcheck/00_pkg_src/rawrr/vignettes/JPR_supplement.Rmd ~/Downloads \
-             && cp /home/runner/work/rawrr/rawrr/rawrr_logo.png ~/Downloads \
-             && cd ~/Downloads \
-             && R -e "rmarkdown::render('JPR_supplement.Rmd')"
-
       - name: List files in home directory
         run: find ~/ -type f > files.txt
 
@@ -105,11 +98,6 @@ jobs:
             name: rawrr_vignette
             path: check/rawrr.Rcheck/rawrr/doc/rawrr.*
             if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v2
-        with:
-            name: rawrr_autoQC01
-            path: /home/runner/Downloads/JPR_supplement*
 
       - uses: actions/upload-artifact@v2
         with:
