@@ -1,4 +1,5 @@
 ![rawrrRCMDcheck](https://github.com/fgcz/rawrr/workflows/R-CMD-check-rawrr/badge.svg)
+[![JPR](https://img.shields.io/badge/JPR-10.1101%2F2020.10.30.362533-brightgreen)](http://dx.doi.org/10.1101/2020.10.30.362533)
 
 
 ![rawrrHexSticker](https://github.com/fgcz/rawrr/blob/master/rawrr_logo.png)
