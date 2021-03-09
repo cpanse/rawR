@@ -1,5 +1,5 @@
 ![rawrrRCMDcheck](https://github.com/fgcz/rawrr/workflows/R-CMD-check-rawrr/badge.svg)
-[![bioRxiv](https://img.shields.io/badge/bioRxiv-10.1101%2F2020.10.30.362533-brightgreen)](http://dx.doi.org/10.1101/2020.10.30.362533)
+[![acs.jproteome.0c00866](https://img.shields.io/badge/10.1021%2Facs.jproteome.0c00866-brightgreen)](https://doi.org/10.1021/acs.jproteome.0c00866)
 
 
 ![rawrrHexSticker](https://github.com/fgcz/rawrr/blob/master/rawrr_logo.png)
