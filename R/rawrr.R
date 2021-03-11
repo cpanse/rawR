@@ -1251,3 +1251,9 @@ dependentScan <- function(x, scanNumber){
     }
     return(i)
 }
+
+
+auc.rawrrChromatogram <- function(x){
+	times <- x$times; intensities <- x$intensities
+	sum(diff(times) * (head(intensities, -1) + tail(intensities, -1))) / 2
+}
