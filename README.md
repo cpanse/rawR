@@ -1,4 +1,5 @@
 ![rawrrRCMDcheck](https://github.com/fgcz/rawrr/workflows/R-CMD-check-rawrr/badge.svg)
+[![acs.jproteome.0c00866](https://img.shields.io/badge/10.1021%2Facs.jproteome.0c00866-brightgreen)](https://doi.org/10.1021/acs.jproteome.0c00866)
 
 
 ![rawrrHexSticker](https://github.com/fgcz/rawrr/blob/master/rawrr_logo.png)
@@ -14,7 +15,7 @@ Please install the latest release from https://github.com/fgcz/rawR/releases acc
 
 [R](https://cran.r-project.org/) (>= 4.0)
  
-### MS Windows
+### Microsoft Windows
 
 Make sure that .NET Framework 4.5.1 or higher is installed.
 
