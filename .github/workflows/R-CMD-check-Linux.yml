@@ -39,38 +39,31 @@ jobs:
           && sudo find /tmp/rawrr -type f -exec mv -v {} $MONO_PATH \;
 
       - name: Cache MSV000086542 raw files
-        id: cache-MSV000086542
+        id: cache-MSV000086542_20181113_010_autoQC01
         uses: actions/cache@v2
         with:
             path: ~/Downloads/
-            key: ${{ runner.os }}-MSV000086542
+            key: ${{ runner.os }}-MSV000086542_20181113_010_autoQC01
 
       - name: Download MSV000086542 raw files
-        if: steps.cache-MSV000086542.outputs.cache-hit != 'true'
+        if: steps.cache-MSV000086542_20181113_010_autoQC01.outputs.cache-hit != 'true'
         run: |
              mkdir -p ~/Downloads/ \
              && cd ~/Downloads/ \
-             && wget ftp://massive.ucsd.edu/MSV000086542/raw/*.raw
+             && wget ftp://massive.ucsd.edu/MSV000086542/raw/20181113_010_autoQC01.raw
 
       - name: Cache R packages
-        id: cache-rpkgs
+        id: cache-RpkgsV2
         uses: actions/cache@v2
         with:
             path: ~/work/_temp/Library/
             key: ${{ runner.os }}-RpkgsV2
 
       - name: Install required R packages from CRAN and Bioconductor
-        if: steps.cache-rpkgsV2.outputs.cache-hit != 'true'
+        if: steps.cache-RpkgsV2.outputs.cache-hit != 'true'
         run: |
              install.packages(c('BiocManager', 'protViz', 'knitr', 'rmarkdown', 'roxygen2', 'testthat', 'rcmdcheck'), repos='https://cloud.r-project.org')
         shell: Rscript {0}
-
-      - name: Cache R packages
-        id: cache-rpkgs-cran-bioc
-        uses: actions/cache@v2
-        with:
-            path: ~/work/_temp/Library/
-            key: ${{ runner.os }}-RpkgsV2
 
       - name: roxygen2::roxygenise
         run: install.packages('roxygen2'); roxygen2::roxygenise(clean=TRUE); unlink("inst/rawrrassembly/bin/rawrr.exe")
