@@ -25,6 +25,11 @@ You need to have [Mono](https://www.mono-project.com) installed. Mono is an open
 
 ## Manuscripts
 
+The rawrr R Package: Direct Access to Orbitrap Data and Beyond 
+https://pubs.acs.org/doi/abs/10.1021/acs.jproteome.0c00866
+
+__!!! Our recommended reading for getting to know the rawrr package !!!__
+
 https://www.biorxiv.org/content/10.1101/2020.10.30.362533v1 - [R markdown file (30KBytes 277lines)](https://github.com/fgcz/rawrr/blob/master/vignettes/rawrr.Rmd)
 
 ## Blog posts
