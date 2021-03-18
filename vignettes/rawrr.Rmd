@@ -1,6 +1,6 @@
 ---
-title: "The rawrr R package – Direct Access to Orbitrap Data and Beyond"
-author: "Tobias Kockmann^1‡\\*^ & Christian Panse^1,2‡^"
+title: "The rawrr R package – Direct Access to Orbitrap Data and Beyond^‡^"
+author: "Tobias Kockmann^1\\*^ & Christian Panse^1,2^"
 date: "`r Sys.time()`"
 output:
   pdf_document: 
@@ -28,7 +28,7 @@ Winterthurerstrasse 190, 8057 Zurich, Switzerland
 
 \* Correspondence: <Tobias.Kockmann@fgcz.ethz.ch>
 
-‡ Equal contributing author
+‡ This vignette is based on the unedited work of the manuscript published as [@Kockmann2021] [doi:10.1021/acs.jproteome.0c00866](https://doi.org/10.1021/acs.jproteome.0c00866).
 
 ```{r, echo=FALSE, eval=FALSE}
   knitr::include_graphics("rawrr_logo.png")
