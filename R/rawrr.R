@@ -3,6 +3,37 @@
     system2("mono", "-V", stdout = TRUE)
 }
 
+
+
+.isRawFileReaderLicenseAccepted <- function(){
+    licenseFile <- file.path(system.file(package = 'rawrr'), 'rawrrassembly', 'RawFileReaderLicense.txt')
+    stopifnot(file.exists(licenseFile))
+
+    eulaFile <- file.path(cachedir <- tools::R_user_dir("rawrr", which='cache'), "eula.txt")
+    msg <- "# By changing the setting below to TRUE you are accepting the Thermo License agreement."
+
+    if (!file.exists(eulaFile)){
+	file.show(licenseFile)
+	fmt <- "Do you accept the Thermo License agreement '%s'? [Y/n]: "
+	prompt <- sprintf(fmt, licenseFile)
+	response <- readline(prompt = prompt)
+	if (tolower(response) == "y"){
+    	    if (!dir.exists(cachedir)) { dir.create(cachedir, recursive = TRUE) }
+	    fileConn <- file(eulaFile)
+	    writeLines(paste(msg, paste0("# ", date()), "eula=true", sep="\n"), fileConn)
+	    close(fileConn)
+
+	    return(TRUE %in% grepl("eula=true", tolower(readLines(eulaFile))))
+	}
+    }else{
+	    return(TRUE %in% grepl("eula=true", tolower(readLines(eulaFile))))
+    }
+
+    stop("You have to accept the Thermo License agreement!")
+
+    FALSE
+}
+
 .writeRData <-
   function(rawfile, outputfile=paste0(rawfile, ".RData"), tmpdir=tempdir()){
 
@@ -116,7 +147,7 @@ readFileHeader <- function(rawfile,
    argv = "infoR",
    system2_call = TRUE,
                            method = "thermo"){
-
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
     rawfile <- normalizePath(rawfile)
 
     if (!file.exists(rawfile)){
@@ -196,6 +227,8 @@ readFileHeader <- function(rawfile,
 #' # given you have a raw file with depende
 #'
 readIndex <- function(rawfile, tmpdir=tempdir()){
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
+
     mono <- if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE
     exe <- .rawrrAssembly()
 
@@ -425,6 +458,7 @@ sampleFilePath <- function(){
 #'   }
 #' }
 readSpectrum <- function(rawfile, scan = NULL, tmpdir=tempdir(), validate=FALSE){
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
     mono <- if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE
     exe <- .rawrrAssembly()
 
@@ -553,6 +587,7 @@ readChromatogram <- function(rawfile,
                              mono = if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE,
                              exe = .rawrrAssembly()){
 
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
     if (!file.exists(rawfile)){
         stop(paste0('File ', rawfile, ' is not available.'))
     }
