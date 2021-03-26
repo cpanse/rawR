@@ -1,5 +1,6 @@
 .rawfileReaderDLLs <- function(){
-  c('ThermoFisher.CommonCore.BackgroundSubtraction.dll',
+  # 'ThermoFisher.CommonCore.BackgroundSubtraction.dll',
+  c(
     'ThermoFisher.CommonCore.Data.dll',
     'ThermoFisher.CommonCore.MassPrecisionEstimator.dll',
     'ThermoFisher.CommonCore.RawFileReader.dll')

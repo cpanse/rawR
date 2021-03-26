@@ -269,6 +269,12 @@ We thank Lilly van de Venn for designing the `rawrr` package logo. We are gratef
 |USI    |Universal spectrum identifier                       |
 |XIC    |extracted ion chromatogram                          |
 
+# Package HexSticker
+
+```{r HexSticker, echo=FALSE, out.width="50%", eval=TRUE}
+  knitr::include_graphics("rawrr_logo.png")
+```
+
 # Session information {-}
 
 ```{r sessioninfo, echo=FALSE}
@@ -278,10 +284,4 @@ sessionInfo()
 # References {-}
 
 
-
-# Package HexSticker
-
-```{r HexSticker, echo=FALSE, out.width="50%", eval=TRUE}
-  knitr::include_graphics("rawrr_logo.png")
-```
 
