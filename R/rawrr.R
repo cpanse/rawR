@@ -4,35 +4,11 @@
 }
 
 
-
-.isRawFileReaderLicenseAccepted <- function(){
-    licenseFile <- file.path(system.file(package = 'rawrr'), 'rawrrassembly', 'RawFileReaderLicense.txt')
-    stopifnot(file.exists(licenseFile))
-
-    eulaFile <- file.path(cachedir <- tools::R_user_dir("rawrr", which='cache'), "eula.txt")
-    msg <- "# By changing the setting below to TRUE you are accepting the Thermo License agreement."
-
-    if (!file.exists(eulaFile)){
-	file.show(licenseFile)
-	fmt <- "Do you accept the Thermo License agreement '%s'? [Y/n]: "
-	prompt <- sprintf(fmt, licenseFile)
-	response <- readline(prompt = prompt)
-	if (tolower(response) == "y"){
-    	    if (!dir.exists(cachedir)) { dir.create(cachedir, recursive = TRUE) }
-	    fileConn <- file(eulaFile)
-	    writeLines(paste(msg, paste0("# ", date()), "eula=true", sep="\n"), fileConn)
-	    close(fileConn)
-
-	    return(TRUE %in% grepl("eula=true", tolower(readLines(eulaFile))))
-	}
-    }else{
-	    return(TRUE %in% grepl("eula=true", tolower(readLines(eulaFile))))
-    }
-
-    stop("You have to accept the Thermo License agreement!")
-
-    FALSE
+.rawrrAssembly <- function(){
+  f <- file.path(.userRawfileReaderDLLsPath(), 'rawrr.exe')
+  return(f)
 }
+
 
 .writeRData <-
   function(rawfile, outputfile=paste0(rawfile, ".RData"), tmpdir=tempdir()){
@@ -54,11 +30,6 @@
 }
 
 
-.rawrrAssembly <- function(){
-  f <- system.file(file.path('rawrrassembly', 'bin', 'rawrr.exe'),
-                   package = 'rawrr')
-  return(f)
-}
 
 .isMonoAssemblyWorking <-
   function(exe = .rawrrAssembly()){
@@ -68,12 +39,20 @@
         return(FALSE)
       }
     }
-    
+
     if (!file.exists(exe)){
       warning("rawrr.exe is not available.")
       return (FALSE)
     }
-    
+
+
+    if (!file.exists(.rawrrAssembly())){
+      warning("'rawrr.exe' not found.\n",
+       "Run 'installRawrrExecuatable()'.",
+       "For more information, type '?ThermoFisher'.")
+      return (FALSE)
+    }
+
     # execute Assembly
     rvs <-  "?"
     if (Sys.info()['sysname'] %in% c("Darwin", "Linux")){
@@ -82,7 +61,7 @@
     }else{
       rvs <- system2(exe, stdout = TRUE)
     }
-    
+
     # expect that string
     if (rvs != "No RAW file specified!"){
       warning("Mono JIT compiler and rawrr.exe assembly are not working.")
@@ -147,6 +126,7 @@ readFileHeader <- function(rawfile,
    argv = "infoR",
    system2_call = TRUE,
                            method = "thermo"){
+    if(isFALSE(.checkRawfileReaderDLLs())){return(FALSE)}
     if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
     rawfile <- normalizePath(rawfile)
 
@@ -164,12 +144,10 @@ readFileHeader <- function(rawfile,
         # message(paste("system2 is writting to tempfile ", tf, "..."))
 
         if (mono){
-            rvs <- system2("mono", args = c(exe, shQuote(rawfile
-            ), argv),
+            rvs <- system2(Sys.which("mono"), args = c(shQuote(exe), shQuote(rawfile), shQuote(argv)),
             stdout = tf)
         }else{
-            rvs <- system2(exe, args = c(shQuote(rawfile
-            ), argv),
+            rvs <- system2(shQuote(exe), args = c(shQuote(rawfile), shQuote(argv)),
             stderr = tf.err,
             stdout = tf)
         }
@@ -231,6 +209,8 @@ readIndex <- function(rawfile, tmpdir=tempdir()){
 
     mono <- if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE
     exe <- .rawrrAssembly()
+    if(isFALSE(.checkRawfileReaderDLLs())){return(FALSE)}
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
 
     rawfile <- normalizePath(rawfile)
 
@@ -461,6 +441,8 @@ readSpectrum <- function(rawfile, scan = NULL, tmpdir=tempdir(), validate=FALSE)
     if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
     mono <- if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE
     exe <- .rawrrAssembly()
+    if(isFALSE(.checkRawfileReaderDLLs())){return(FALSE)}
+    if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
 
     if (!file.exists(rawfile)){
         stop(paste0('File ', rawfile, ' is not available.'))
@@ -587,7 +569,9 @@ readChromatogram <- function(rawfile,
                              mono = if(Sys.info()['sysname'] %in% c("Darwin", "Linux")) TRUE else FALSE,
                              exe = .rawrrAssembly()){
 
+    if(isFALSE(.checkRawfileReaderDLLs())){return(FALSE)}
     if(interactive()){ stopifnot(.isRawFileReaderLicenseAccepted()) }
+
     if (!file.exists(rawfile)){
         stop(paste0('File ', rawfile, ' is not available.'))
     }
@@ -952,7 +936,7 @@ plot.rawrrSpectrum <- function(x, relative = TRUE, centroid = FALSE, SN = FALSE,
                cex=0.5)
 
     }
-  
+
   if (diagnostic) {
     legend("left", legend = paste(c("Injection time [ms]: ",
                                     "Max. Injection time [ms]: ",
@@ -964,7 +948,7 @@ plot.rawrrSpectrum <- function(x, relative = TRUE, centroid = FALSE, SN = FALSE,
                                     format(x$`FT Resolution`, scientific = TRUE))),
            bty = "n", cex = 0.5, text.col = "grey")
   }
-  
+
   invisible(x)
 
 }
@@ -1288,6 +1272,14 @@ dependentScan <- function(x, scanNumber){
 }
 
 
+#' Example snippet for deriving an AUC
+#'
+#' @param x an rawrrChromatogram
+#'
+#' @return a numeric value
+#' @importFrom utils head tail
+#'
+#' @examples
 auc.rawrrChromatogram <- function(x){
 	times <- x$times; intensities <- x$intensities
 	sum(diff(times) * (head(intensities, -1) + tail(intensities, -1))) / 2

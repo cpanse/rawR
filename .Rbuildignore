@@ -15,3 +15,5 @@ vignettes.functional_test.Rmd
 .*JPR.*Rmd
 ^doc$
 ^Meta$
+inst/rawrrassembly/.*dll$
+inst/rawrrassembly/.*exe$
