@@ -60,9 +60,16 @@ installRawfileReaderDLLs <- function(sourceUrl = "https://github.com/compomics/T
 
   vapply(.rawfileReaderDLLs(), function(dll){
     download.file(file.path(sourceUrl, dll),
-                  destfile=file.path(rawfileReaderDLLsPath, dll), ...)},
+                  destfile=file.path(rawfileReaderDLLsPath, dll), mode='wb', ...)},
     0)
 }
+
+installRawrrExe <- function (...)
+{
+    sourceUrl <- "http://fgcz-ms.uzh.ch/~cpanse/rawrr/rawrr.exe"
+    download.file(sourceUrl, destfile = .rawrrAssembly(), mode='wb', ...)
+}
+
 
 
 .buildRawrrExe <- function(){
