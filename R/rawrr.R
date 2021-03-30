@@ -4,12 +4,6 @@
 }
 
 
-.rawrrAssembly <- function(){
-  f <- file.path(.userRawfileReaderDLLsPath(), 'rawrr.exe')
-  return(f)
-}
-
-
 .writeRData <-
   function(rawfile, outputfile=paste0(rawfile, ".RData"), tmpdir=tempdir()){
 
@@ -28,8 +22,6 @@
     save(objName, file=outputfile, envir = e)
 
 }
-
-
 
 .isMonoAssemblyWorking <-
   function(exe = .rawrrAssembly()){
@@ -1278,8 +1270,6 @@ dependentScan <- function(x, scanNumber){
 #'
 #' @return a numeric value
 #' @importFrom utils head tail
-#'
-#' @examples
 auc.rawrrChromatogram <- function(x){
 	times <- x$times; intensities <- x$intensities
 	sum(diff(times) * (head(intensities, -1) + tail(intensities, -1))) / 2

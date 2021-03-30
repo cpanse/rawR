@@ -25,22 +25,29 @@
   }, FALSE)
   if (isFALSE(all(rv))){
     warning("'ThermoFisher.CommonCore.*.dll' files are not complete.\n",
-            "Run 'installRawfileReaderDLLs()' or setenv MONO_PATH to the location",
-            " where the assemblies are located.\n",
+            "Run 'rawrr::installRawfileReaderDLLs()' or setenv MONO_PATH to ",
+            "the location, where the assemblies are located.\n",
             "For more information, type '?ThermoFisher'.")
   }
   all(rv)
 }
 
 
+.rawrrAssembly <- function(){
+  f <- file.path(.userRawfileReaderDLLsPath(), 'rawrr.exe')
+  return(f)
+}
+
 
 #' Install the New RawFileReader from Thermo Fisher Scientific
 #'
 #' @param ... other parameter for \code{download.file}
 #' @param sourceUrl url of New RawFileReader from Thermo Fisher Scientific
-#' assemblies
+#' assemblies.
 #'
+#' @aliases Thermo
 #' @aliases ThermoFisher
+#' @aliases ThermoFisherScientific
 #'
 #' @seealso \url{https://planetorbitrap.com/rawfilereader}
 #'
@@ -51,29 +58,52 @@
 #' @export installRawfileReaderDLLs
 #' @importFrom utils download.file
 #'
-installRawfileReaderDLLs <- function(sourceUrl = "https://github.com/compomics/ThermoRawFileParser/raw/master/packages/mzLib.1.0.450/lib/netstandard2.0/", ...){
+installRawfileReaderDLLs <-
+  function(sourceUrl = "https://github.com/compomics/ThermoRawFileParser/raw/master/packages/mzLib.1.0.450/lib/netstandard2.0/", ...){
 
   rawfileReaderDLLsPath <- .userRawfileReaderDLLsPath()
+  message(sprintf("Installiung Thermo Fisher Rawfile Reader assemblies in %s ...",
+          rawfileReaderDLLsPath))
   if (isFALSE(dir.exists(rawfileReaderDLLsPath))){
     dir.create(rawfileReaderDLLsPath, recursive = TRUE)
   }
 
   vapply(.rawfileReaderDLLs(), function(dll){
-    download.file(file.path(sourceUrl, dll),
-                  destfile=file.path(rawfileReaderDLLsPath, dll), mode='wb', ...)},
+    destfile <- file.path(rawfileReaderDLLsPath, dll)
+    rv <- download.file(file.path(sourceUrl, dll),
+                  destfile=destfile, mode='wb', ...)
+    message(sprintf("MD5 %s %s", tools::md5sum(destfile), destfile))
+    rv},
     0)
 }
 
-installRawrrExe <- function (...)
-{
-    sourceUrl <- "http://fgcz-ms.uzh.ch/~cpanse/rawrr/rawrr.exe"
-    download.file(sourceUrl, destfile = .rawrrAssembly(), mode='wb', ...)
-}
-
-
+#' Installing \code{rawrr.exe} assembly
+#'
+#' @param sourceUrl url of r\code{rawrr.exe} assembly.
+#' @param ... other parameter for \code{download.file}.
+#'
+#' @return An integer code, 0 for success and non-zero for
+#' failure. For the "wget" and "curl" methods this is the status code returned
+#' by the external program.
+#'
+#' @export installRawrrExe
+installRawrrExe <-
+  function (sourceUrl = "http://fgcz-ms.uzh.ch/~cpanse/rawrr/rawrr.exe",
+            ...)
+  {
+    rawrrAssembly <- .rawrrAssembly()
+    rv = download.file(sourceUrl, destfile = rawrrAssembly, mode='wb', ...)
+    message(sprintf("MD5 %s %s", tools::md5sum(rawrrAssembly), rawrrAssembly))
+    rv
+  }
 
 .buildRawrrExe <- function(){
   packagedir <- system.file(package = 'rawrr')
+
+  if (isFALSE(.checkRawfileReaderDLLs())){
+    return()
+  }
+
   if (Sys.which("msbuild") == "" && Sys.which("xbuild") == "")
   {
     warning ("could not find msbuild or xbuild in path; will not be able to use rDotNet unless corrected and rebuilt")
@@ -85,14 +115,20 @@ installRawrrExe <- function (...)
 
   cmd <- ifelse(Sys.which("msbuild") != "", "msbuild", "xbuild")
   cmdArgs <- sprintf("/p:OutputPath='%s/'", dirname(.rawrrAssembly()))
-  rv <- system2 (cmd, cmdArgs, wait=TRUE, stderr=TRUE, stdout=TRUE)
+  if (Sys.getenv("MONO_PATH") == ""){
+    Sys.setenv(MONO_PATH = dirname(.rawrrAssembly()))
+  }
 
+  rv <- system2 (cmd, cmdArgs, wait=TRUE, stderr=TRUE, stdout=TRUE)
 
   if (rv <- any(grepl("Build succeeded.", rv)) && file.exists(.rawrrAssembly())){
     message(sprintf("rawrr.exe successfully built\n'%s'.",
                     dirname(.rawrrAssembly())))
+    message(rv)
   }else{
-    warning("rawrr.exe build failed.")
+    warning("rawrr.exe build failed. Try to download and install by calling ",
+            "the 'rawrr::installRawrrExe()' method.")
+    warning(rv)
   }
   setwd(cwd)
   rv
