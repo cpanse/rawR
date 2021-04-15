@@ -35,3 +35,7 @@ https://www.biorxiv.org/content/10.1101/2020.10.30.362533v1 - [R markdown file (
 ## Blog posts
 
 http://proteomicsnews.blogspot.com/2020/11/raw-mass-spec-data-is-too-pretty-for.html
+
+## FAQ
+
+- [How to pronounce the package name the right way?](https://youtu.be/jBc2MniDBYw)
