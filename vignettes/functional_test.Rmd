@@ -3,7 +3,7 @@ title: rawrr - Functional test using raw files (autoQC01) from different LC-MS s
 author: 
   - Tobias Kockmann^[Functional Genomics Center Zurich (FGCZ), ETH Zurich / University of Zurich, Winterthurerstrasse 190, 8057 Zurich, Switzerland]
   - Christian Panse^[FGCZ and Swiss Institute of Bioinformatics, Quartier Sorge - Batiment Amphipole, 1015 Lausanne, Switzerland]
-date: "`r Sys.time()`"
+date: "`r Sys.time()`" 
 output:
   html_document:
     df_print: paged
@@ -33,23 +33,12 @@ abstract: |
 
 
 ```{r sticker, out.width="25%", fig.align="center", fig.cap=" Lions love raw meat!", echo=FALSE}
-knitr::include_graphics("images/hex-rmarkdown.png")
+knitr::include_graphics("rawrr_logo.png")
 ```
 
 `<!--
 TK: Asking myself if this couldn't be done using GitHub actions? It sounds sooooo much like continuous integration (CI).
 -->
-
-
-# Load R libraries and define input data
-
-```{r}
-library(rawrr)
-library(parallel)
-
-# only used for computing PSMs
-library(protViz)
-```
 
 
 Read raw file listing.
@@ -81,10 +70,10 @@ Table: Overview of the _read_ functions of the `rawrr` package.
 
 ## Set number of concurrent running tasks
 
-Set the number of `mc.cores` to `r detectCores()`.
+Set the number of `mc.cores` to `r parallel::detectCores()`.
 
 ```{r mccores}
-options(mc.cores = detectCores())
+options(mc.cores = parallel::detectCores())
 options('mc.cores')
 ```
 
@@ -93,7 +82,7 @@ options('mc.cores')
 Read a list of meta data for each raw file.
 
 ```{r fileHeader}
-H <- mclapply(FUN=rawrr::readFileHeader, input)
+H <- parallel::mclapply(FUN=rawrr::readFileHeader, input)
 ```
 
 ```{r defineInfo, echo=FALSE}
@@ -156,7 +145,7 @@ names(iRT.mZ) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
   
   yIons <- function (b, y) return(y)
   
-  bestMatchingMS2Scan <- mclapply(1:length(pepSeq), function(i){
+  bestMatchingMS2Scan <- parallel::mclapply(1:length(pepSeq), function(i){
     PL <- rawrr::readSpectrum(rawfile, scan = scanNumbers[[i]])
     
     pp <- lapply(PL, function(x){protViz::psm(pepSeq[i], x, FUN = yIons,
@@ -188,11 +177,11 @@ names(iRT.mZ) <- c("LGGNEQVTR", "YILAGVENSK", "GTFIIDPGGVIR", "GTFIIDPAAVIR",
 ```
 As a proof-of-concept, the R function `.computeBestPeptideSpectrumMatch` defines a basic heuristic to determine feasible peptide to spectrum matches (psm) for the iRT peptides.
 
-The snippet below performs the peptide spectrum match number crunching for the `r names(iRT.mZ)[1]` peptide on all raw files utilizing `r detectCores()` cores:
+The snippet below performs the peptide spectrum match number crunching for the `r names(iRT.mZ)[1]` peptide on all raw files utilizing `r parallel::detectCores()` cores:
 
 ```{r computeBestMatches}
 start_time <- Sys.time()
-bestMatchingMS2Scan <- mclapply(FUN = .computeBestPeptideSpectrumMatch,
+bestMatchingMS2Scan <- parallel::mclapply(FUN = .computeBestPeptideSpectrumMatch,
                                 input,
                                 pepSeq=names(iRT.mZ)[1])
 end_time <- Sys.time()
@@ -217,12 +206,12 @@ knitr::kable(S[c("Id", "scan", "score")],
 ```{r definePlotBestMatches, echo=FALSE}
 .plotBestMatches <- function(x, instrumentModel){
   if(is.na(x$scan)) return (NULL)
-  S <- readSpectrum(x$rawfile[1], x$scan)
+  S <- rawrr::readSpectrum(x$rawfile[1], x$scan)
   
   lapply(1, function(i){
     plot(S[[i]], main=x$peptide[i], sub=instrumentModel)
     Y <- x$peptide[i]
-    abline(v=fi<-fragmentIon(Y)[[1]]$y[1:nchar(Y)-1],
+    abline(v=fi <- protViz::fragmentIon(Y)[[1]]$y[1:nchar(Y)-1],
            col="#AAAAAA66",lwd=5)
     
     axis(3, fi, paste0('y', 1:length(fi)))
@@ -246,7 +235,7 @@ Derive chromatograms for all iRT peptides applying the mass filter option and an
 ```{r readChromatogram, error=TRUE}
 start_time <- Sys.time()
 
-C <- mclapply(X = input,
+C <- parallel::mclapply(X = input,
               FUN = rawrr::readChromatogram,
               mass = iRT.mZ,
               tol = 10,
