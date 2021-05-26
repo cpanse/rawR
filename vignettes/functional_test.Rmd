@@ -36,11 +36,6 @@ abstract: |
 knitr::include_graphics("rawrr_logo.png")
 ```
 
-`<!--
-TK: Asking myself if this couldn't be done using GitHub actions? It sounds sooooo much like continuous integration (CI).
--->
-
-
 Read raw file listing.
 
 ```{r input}
